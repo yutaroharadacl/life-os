@@ -4,6 +4,7 @@ import nextTs from 'eslint-config-next/typescript';
 import prettier from 'eslint-plugin-prettier/recommended';
 import importX from 'eslint-plugin-import-x';
 import boundaries from 'eslint-plugin-boundaries';
+import unusedImports from 'eslint-plugin-unused-imports';
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -11,9 +12,12 @@ const eslintConfig = defineConfig([
   prettier,
 
   {
+    files: ['**/*.{js,mjs,cjs,ts,jsx,tsx}'],
+
     plugins: {
       'import-x': importX,
       boundaries,
+      'unused-imports': unusedImports,
     },
 
     settings: {
@@ -36,13 +40,21 @@ const eslintConfig = defineConfig([
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
 
-      '@typescript-eslint/no-unused-vars': [
+      // --- 未使用インポート・変数の制御 ---
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': [
         'error',
         {
+          vars: 'all',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
           argsIgnorePattern: '^_',
         },
       ],
 
+      // --- import 順序 ---
       'import-x/order': [
         'error',
         {
@@ -51,6 +63,7 @@ const eslintConfig = defineConfig([
         },
       ],
 
+      // --- Bulletproof アーキテクチャの境界チェック ---
       'boundaries/element-types': [
         'error',
         {
