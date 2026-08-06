@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git show:*)",
+      "Read(//Users/haradayutaro/Projects/next_go_practice/my-app/**)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*.pem)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm lint >/dev/null 2>&1 || echo '⚠️ pnpm lint が失敗しています。`pnpm lint` を実行して修正してください。'; pnpm typecheck >/dev/null 2>&1 || echo '⚠️ 型エラーがあります。`pnpm typecheck` を実行して修正してください。'",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
