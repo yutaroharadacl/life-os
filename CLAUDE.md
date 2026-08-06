@@ -48,11 +48,11 @@ src/
 
 **依存の向き**
 
-| from      | 許可される import 先  |
-| --------- | --------------------- |
-| `app`     | `feature`, `shared`   |
-| `feature` | `shared` のみ         |
-| `shared`  | `shared` のみ         |
+| from      | 許可される import 先 |
+| --------- | -------------------- |
+| `app`     | `feature`, `shared`  |
+| `feature` | `shared` のみ        |
+| `shared`  | `shared` のみ        |
 
 - **feature 同士の相互 import は禁止**。共有したくなったら `shared` に切り出す。
 - `src/api/` と `src/components/` は空ディレクトリで、上記の境界定義に存在しない。
@@ -71,6 +71,13 @@ pnpm test:coverage   # カバレッジ付き
 ```
 
 実装を終えたら **`pnpm lint` → `pnpm typecheck` → `pnpm test` の3つを必ず通す**こと。
+
+さらに、**日時やリクエストに依存する値を扱うページを追加・変更したら `pnpm build` を実行**し、
+Route 一覧でそのルートが `○ (Static)` になっていないか確認する。
+App Router は動的 API を使わないページを静的化するため、`new Date()` の結果が
+ビルド時刻のまま HTML に焼き込まれる。意図せず静的化されている場合は
+`export const dynamic = 'force-dynamic'` などで明示的に制御すること。
+（lint / typecheck / test では検出できない。実例: `docs/ai-feedback.md` 2026-08-06 #1）
 
 ## コーディング規約
 
@@ -92,12 +99,16 @@ pnpm test:coverage   # カバレッジ付き
                                     ▼
 プロンプト ──/detail-design──▶ docs/design/<機能名>.md      [メイン / Opus]
                                     │
+                            ★ユーザーの承認ゲート★
+                        （設計書をレビューしてもらう。
+                          承認を得るまで実装に進まない）
+                                    │
                                     ▼
               /implement-from-design（TDDサイクル）
                  ├─ ① RED      : unit-test-writer で先に失敗するテストを書く  [サブ / Sonnet]
                  ├─ ② GREEN    : テストを通す実装                            [メイン]
                  ├─ ③ REFACTOR : 規約に沿って整理（テストは緑のまま）          [メイン]
-                 └─ ④ 検証     : lint / typecheck / test
+                 └─ ④ 検証     : lint / typecheck / test（＋ページ変更時は build）
                                     │
                                     ▼
                         design-impl-reviewer                 [サブ / Sonnet]
@@ -111,14 +122,14 @@ pnpm test:coverage   # カバレッジ付き
                         ──/create-pr──▶ PR                   [メイン]
 ```
 
-| 種別       | 名前                    | 用途                            |
-| ---------- | ----------------------- | ------------------------------- |
-| スキル     | `task-breakdown`        | 要件定義書 → 実装タスクへ分割    |
-| スキル     | `detail-design`         | プロンプト → 詳細設計書          |
-| スキル     | `implement-from-design` | 詳細設計書 → 実装（TDD）         |
-| スキル     | `create-pr`             | コミットメッセージと PR の作成   |
-| エージェント | `unit-test-writer`      | 単体テストの作成                 |
-| エージェント | `design-impl-reviewer`  | 設計と実装の突合レビュー         |
+| 種別         | 名前                    | 用途                           |
+| ------------ | ----------------------- | ------------------------------ |
+| スキル       | `task-breakdown`        | 要件定義書 → 実装タスクへ分割  |
+| スキル       | `detail-design`         | プロンプト → 詳細設計書        |
+| スキル       | `implement-from-design` | 詳細設計書 → 実装（TDD）       |
+| スキル       | `create-pr`             | コミットメッセージと PR の作成 |
+| エージェント | `unit-test-writer`      | 単体テストの作成               |
+| エージェント | `design-impl-reviewer`  | 設計と実装の突合レビュー       |
 
 ### モデル配分の原則
 
@@ -140,6 +151,7 @@ pnpm test:coverage   # カバレッジ付き
 - **テストを書かずに実装を始める**（テストファースト必須。ユーザーが明示的にスキップを指示した場合のみ例外）
 - `any` を使う（ESLint エラー）
 - `console.log` を使う（`console.warn` / `console.error` のみ可）
+- **詳細設計書の承認を得ずに実装に入る**（未決事項が無くても、設計書のレビュー機会を必ず設ける）
 - 指示なしに `git commit` / `git push` する
 - `docs/要件定義書_*.md` を勝手に書き換える（変更が必要ならユーザーに確認する）
 - 設計書に書かれていないファイルを勝手に増やす（必要なら設計書を先に更新する）
