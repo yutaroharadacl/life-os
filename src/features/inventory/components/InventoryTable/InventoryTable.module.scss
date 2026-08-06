@@ -1,0 +1,128 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.count {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storage {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* 表が収まらない画面幅でも全列を参照できるようにする（通常は横スクロールしない） */
+.scroller {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  /* 保管場所ごとに表が分かれるため、列幅を固定して表どうしの位置を揃える */
+  table-layout: fixed;
+  font-size: 0.75rem;
+
+  th,
+  td {
+    padding: 8px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    /* 列幅が狭いモバイルでは折り返して全列を表示する */
+    word-break: break-word;
+  }
+
+  thead th {
+    font-weight: 600;
+    color: var(--color-muted);
+    background-color: var(--color-surface);
+    white-space: nowrap;
+  }
+
+  th.numeric,
+  td.numeric {
+    text-align: right;
+  }
+
+  thead th:nth-child(1) {
+    width: 24%;
+  }
+
+  thead th:nth-child(2) {
+    width: 18%;
+  }
+
+  thead th:nth-child(3) {
+    width: 11%;
+  }
+
+  thead th:nth-child(4) {
+    width: 24%;
+  }
+}
+
+.name {
+  font-weight: 600;
+}
+
+.expired {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.warning {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--color-muted);
+}
+
+.empty {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--color-muted);
+  background-color: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+}
+
+/* タブレット以上では余白を広げ、1行1件を折り返さずに表示する */
+@media (min-width: 600px) {
+  .table {
+    font-size: 0.875rem;
+
+    th,
+    td {
+      padding: 10px 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}

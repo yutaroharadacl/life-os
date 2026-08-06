@@ -1,12 +1,27 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* 期限切れ */
+  --color-danger: #dc2626;
+  /* 期限間近 */
+  --color-warning: #d97706;
+  /* 補助テキスト */
+  --color-muted: #6b7280;
+  /* 罫線 */
+  --color-border: #e5e7eb;
+  /* テーブルヘッダ・空状態の背景 */
+  --color-surface: #f9fafb;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --color-danger: #f87171;
+    --color-warning: #fbbf24;
+    --color-muted: #9ca3af;
+    --color-border: #2a2a2a;
+    --color-surface: #161616;
   }
 }
 
