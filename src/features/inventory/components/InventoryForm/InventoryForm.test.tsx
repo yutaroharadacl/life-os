@@ -2,7 +2,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Category, StorageLocation } from '../../types';
+import { Category, InventoryFormValues, StorageLocation } from '../../types';
 
 import { InventoryForm } from './InventoryForm';
 
@@ -32,6 +32,18 @@ const fillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.selectOptions(screen.getByLabelText('カテゴリ'), '野菜');
   await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
 };
+
+// テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
+const createFormValues = (overrides: Partial<InventoryFormValues> = {}): InventoryFormValues => ({
+  category: '野菜',
+  expirationDate: '2026-08-20',
+  memo: '半分使用済み',
+  name: '白菜',
+  purchaseDate: '2026-08-03',
+  quantity: '2',
+  storage: '冷蔵庫',
+  ...overrides,
+});
 
 describe('InventoryForm', () => {
   describe('正常系', () => {
@@ -354,6 +366,136 @@ describe('InventoryForm', () => {
           expect.objectContaining({ expirationDate: null, memo: '' }),
         );
       });
+    });
+  });
+
+  describe('編集モード', () => {
+    it('mode省略時は送信ボタンが登録するになる', () => {
+      render(
+        <InventoryForm
+          categories={createCategories()}
+          storageLocations={createStorageLocations()}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          today={today}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: '登録する' })).toBeInTheDocument();
+    });
+
+    it('mode=editのとき送信ボタンが更新するになる', () => {
+      render(
+        <InventoryForm
+          mode="edit"
+          categories={createCategories()}
+          storageLocations={createStorageLocations()}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          today={today}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: '更新する' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '登録する' })).not.toBeInTheDocument();
+    });
+
+    it('initialValuesを渡すと各入力欄にその値が反映される', () => {
+      render(
+        <InventoryForm
+          mode="edit"
+          initialValues={createFormValues()}
+          categories={createCategories()}
+          storageLocations={createStorageLocations()}
+          onSubmit={vi.fn()}
+          onCancel={vi.fn()}
+          today={today}
+        />,
+      );
+
+      expect(screen.getByLabelText('食品名')).toHaveValue('白菜');
+      expect(screen.getByLabelText('カテゴリ')).toHaveValue('野菜');
+      expect(screen.getByLabelText('保管場所')).toHaveValue('冷蔵庫');
+      expect(screen.getByLabelText('数量')).toHaveValue(2);
+      expect(screen.getByLabelText('期限')).toHaveValue('2026-08-20');
+      expect(screen.getByLabelText('購入日')).toHaveValue('2026-08-03');
+      expect(screen.getByLabelText('メモ')).toHaveValue('半分使用済み');
+    });
+
+    it('mode=editで更新するを押すと送信中は更新中…と表示される', async () => {
+      const user = userEvent.setup();
+      let finishSubmit = () => {};
+      const onSubmit = vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            finishSubmit = resolve;
+          }),
+      );
+      render(
+        <InventoryForm
+          mode="edit"
+          initialValues={createFormValues()}
+          categories={createCategories()}
+          storageLocations={createStorageLocations()}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+          today={today}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: '更新する' }));
+
+      expect(await screen.findByRole('button', { name: '更新中…' })).toBeDisabled();
+
+      await act(async () => {
+        finishSubmit();
+      });
+    });
+
+    it('mode=editで数量だけ変更して更新するを押すとonSubmitに変更後の数量で呼ばれる', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(
+        <InventoryForm
+          mode="edit"
+          initialValues={createFormValues()}
+          categories={createCategories()}
+          storageLocations={createStorageLocations()}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+          today={today}
+        />,
+      );
+
+      await user.clear(screen.getByLabelText('数量'));
+      await user.type(screen.getByLabelText('数量'), '9');
+      await user.click(screen.getByRole('button', { name: '更新する' }));
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ quantity: 9 }));
+      });
+    });
+
+    it('mode=editで食品名を空にして更新するを押すとエラーが表示されonSubmitは呼ばれない', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(
+        <InventoryForm
+          mode="edit"
+          initialValues={createFormValues()}
+          categories={createCategories()}
+          storageLocations={createStorageLocations()}
+          onSubmit={onSubmit}
+          onCancel={vi.fn()}
+          today={today}
+        />,
+      );
+
+      await user.clear(screen.getByLabelText('食品名'));
+      await user.click(screen.getByRole('button', { name: '更新する' }));
+
+      expect(await screen.findByText('食品名を入力してください')).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
     });
   });
 });

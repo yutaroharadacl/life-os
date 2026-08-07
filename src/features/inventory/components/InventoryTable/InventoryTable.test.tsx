@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
 
 import { Inventory } from '../../types';
 
@@ -232,6 +233,78 @@ describe('InventoryTable', () => {
 
       expect(screen.getByText('全 1 件')).toBeInTheDocument();
       expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    it('onEdit・onDeleteを省略しても表がクラッシュせず描画される', () => {
+      render(<InventoryTable inventories={[createInventory()]} today={today} />);
+
+      expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+  });
+
+  describe('操作列', () => {
+    it('操作列の見出しが表示される', () => {
+      render(
+        <InventoryTable
+          inventories={[createInventory()]}
+          today={today}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('columnheader', { name: '操作' })).toBeInTheDocument();
+    });
+
+    it('各行に編集・削除ボタンが表示される', () => {
+      render(
+        <InventoryTable
+          inventories={[createInventory()]}
+          today={today}
+          onEdit={vi.fn()}
+          onDelete={vi.fn()}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: '編集' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '削除' })).toBeInTheDocument();
+    });
+
+    it('編集ボタンを押すとonEditが対象の在庫とともに呼ばれる', async () => {
+      const user = userEvent.setup();
+      const onEdit = vi.fn();
+      const inventory = createInventory({ id: '1', name: '白菜' });
+      render(
+        <InventoryTable
+          inventories={[inventory]}
+          today={today}
+          onEdit={onEdit}
+          onDelete={vi.fn()}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: '編集' }));
+
+      expect(onEdit).toHaveBeenCalledWith(inventory);
+    });
+
+    it('削除ボタンを押して削除するを押すとonDeleteが対象の在庫とともに呼ばれる', async () => {
+      const user = userEvent.setup();
+      const onDelete = vi.fn();
+      const inventory = createInventory({ id: '1', name: '白菜' });
+      render(
+        <InventoryTable
+          inventories={[inventory]}
+          today={today}
+          onEdit={vi.fn()}
+          onDelete={onDelete}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: '削除' }));
+      await user.click(screen.getByRole('button', { name: '削除する' }));
+
+      expect(onDelete).toHaveBeenCalledWith(inventory);
     });
   });
 });

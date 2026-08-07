@@ -1,0 +1,36 @@
+.actions,
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.confirmMessage {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.secondary {
+  color: inherit;
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+}
+
+.danger {
+  color: var(--color-danger);
+  background-color: transparent;
+  border: 1px solid var(--color-danger);
+}

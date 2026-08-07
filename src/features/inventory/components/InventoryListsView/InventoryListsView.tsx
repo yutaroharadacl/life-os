@@ -3,9 +3,12 @@
 import { useState } from 'react';
 
 import { createInventory } from '../../api/createInventory';
+import { deleteInventory } from '../../api/deleteInventory';
+import { updateInventory } from '../../api/updateInventory';
 import { useInventoryFilterStore } from '../../stores/useInventoryFilterStore';
 import { Category, Inventory, InventoryDraft, StorageLocation } from '../../types';
 import { filterInventories } from '../../utils/filterInventories';
+import { toInventoryFormValues } from '../../utils/toInventoryFormValues';
 import { InventoryFilterBar } from '../InventoryFilterBar';
 import { InventoryFormModal } from '../InventoryFormModal';
 import { InventoryTable } from '../InventoryTable';
@@ -44,6 +47,8 @@ export const InventoryListsView = ({
 }: Props) => {
   const [inventories, setInventories] = useState(initialInventories);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // null は登録モード、値があれば編集モード（対象在庫）を表す
+  const [editingTarget, setEditingTarget] = useState<Inventory | null>(null);
   const [flashMessage, setFlashMessage] = useState('');
 
   const keyword = useInventoryFilterStore((state) => state.keyword);
@@ -57,6 +62,20 @@ export const InventoryListsView = ({
   const emptyMessage = inventories.length > 0 ? NO_MATCH_MESSAGE : undefined;
 
   const handleSubmit = (draft: InventoryDraft) => {
+    if (editingTarget) {
+      const updated = updateInventory(editingTarget.id, draft);
+
+      setInventories((previous) =>
+        previous.map((inventory) => (inventory.id === updated.id ? updated : inventory)),
+      );
+      // 絞り込み条件が残っていると、編集後の内容が条件から外れて一覧から消えることがあるため、登録時と同様にクリアする
+      resetFilters();
+      setIsModalOpen(false);
+      setEditingTarget(null);
+      setFlashMessage(`${updated.name}を更新しました`);
+      return;
+    }
+
     const created = createInventory(draft);
 
     // 表示位置は InventoryTable のグループ化と並び替えが決めるため、末尾に足すだけでよい
@@ -67,9 +86,28 @@ export const InventoryListsView = ({
     setFlashMessage(`${created.name}を登録しました`);
   };
 
-  const handleOpen = () => {
+  const handleOpenCreate = () => {
     setFlashMessage('');
+    setEditingTarget(null);
     setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (inventory: Inventory) => {
+    setFlashMessage('');
+    setEditingTarget(inventory);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    // モーダルが閉じている間は編集対象を残さない（次に開くのが常に正しいモードになるようにする）
+    setEditingTarget(null);
+  };
+
+  const handleDelete = (inventory: Inventory) => {
+    deleteInventory(inventory.id);
+    setInventories((previous) => previous.filter((item) => item.id !== inventory.id));
+    setFlashMessage(`${inventory.name}を削除しました`);
   };
 
   return (
@@ -87,8 +125,10 @@ export const InventoryListsView = ({
         today={today}
         sortOrder={sortOrder}
         emptyMessage={emptyMessage}
+        onEdit={handleOpenEdit}
+        onDelete={handleDelete}
         action={
-          <button type="button" className={styles.register} onClick={handleOpen}>
+          <button type="button" className={styles.register} onClick={handleOpenCreate}>
             在庫を登録
           </button>
         }
@@ -96,9 +136,11 @@ export const InventoryListsView = ({
 
       <InventoryFormModal
         open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         categories={categories}
         storageLocations={storageLocations}
+        mode={editingTarget ? 'edit' : 'create'}
+        initialValues={editingTarget ? toInventoryFormValues(editingTarget) : undefined}
         onSubmit={handleSubmit}
       />
     </>

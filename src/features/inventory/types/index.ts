@@ -47,6 +47,9 @@ export type InventoryFormValues = {
 /** フィールドごとのエラーメッセージ。エラーのないフィールドはキーを持たない */
 export type InventoryFormErrors = Partial<Record<keyof InventoryFormValues, string>>;
 
+/** 在庫フォームの動作モード。ラベル・初期値の出し分けに使う */
+export type InventoryFormMode = 'create' | 'edit';
+
 /** 期限の状態 */
 export type ExpirationStatus = 'expired' | 'warning' | 'normal' | 'none';
 

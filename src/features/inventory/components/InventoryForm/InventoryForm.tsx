@@ -6,6 +6,7 @@ import {
   Category,
   InventoryDraft,
   InventoryFormErrors,
+  InventoryFormMode,
   InventoryFormValues,
   StorageLocation,
 } from '../../types';
@@ -46,9 +47,19 @@ const createInitialValues = (today: Date): InventoryFormValues => ({
   memo: '',
 });
 
+/** mode ごとの送信ボタンのラベル */
+const SUBMIT_LABELS: Record<InventoryFormMode, { idle: string; pending: string }> = {
+  create: { idle: '登録する', pending: '登録中…' },
+  edit: { idle: '更新する', pending: '更新中…' },
+};
+
 type Props = {
   categories?: Category[];
   storageLocations?: StorageLocation[];
+  /** フォームの動作モード。ラベルの出し分けに使う。省略時は 'create' */
+  mode?: InventoryFormMode;
+  /** 編集対象の初期値。省略時は登録用の初期値（today から組み立てる）を使う */
+  initialValues?: InventoryFormValues;
   /**
    * 入力が妥当だったときに呼ぶ。
    * Promise を返すと、解決するまで「登録中…」を表示して二重送信を防ぐ
@@ -64,13 +75,17 @@ type Props = {
 export const InventoryForm = ({
   categories = [],
   storageLocations = [],
+  mode = 'create',
+  initialValues,
   onSubmit,
   onCancel,
   today = new Date(),
 }: Props) => {
   const formId = useId();
   // 初期化は最初のレンダーだけで済ませる（再レンダーのたびに new Date() を評価しない）
-  const [values, setValues] = useState<InventoryFormValues>(() => createInitialValues(today));
+  const [values, setValues] = useState<InventoryFormValues>(
+    () => initialValues ?? createInitialValues(today),
+  );
   // 送信後に利用者が直した欄。エラーを引っ込める判断に使う
   const [editedFields, setEditedFields] = useState<
     Partial<Record<keyof InventoryFormValues, true>>
@@ -233,7 +248,7 @@ export const InventoryForm = ({
           キャンセル
         </button>
         <button type="submit" className={styles.primary} disabled={isPending}>
-          {isPending ? '登録中…' : '登録する'}
+          {isPending ? SUBMIT_LABELS[mode].pending : SUBMIT_LABELS[mode].idle}
         </button>
       </div>
     </form>
