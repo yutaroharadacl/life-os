@@ -2,10 +2,22 @@
 
 import { MouseEvent, useEffect, useId, useRef } from 'react';
 
-import { Category, InventoryDraft, StorageLocation } from '../../types';
+import {
+  Category,
+  InventoryDraft,
+  InventoryFormMode,
+  InventoryFormValues,
+  StorageLocation,
+} from '../../types';
 import { InventoryForm } from '../InventoryForm';
 
 import styles from './InventoryFormModal.module.scss';
+
+/** mode ごとのモーダルタイトル */
+const TITLES: Record<InventoryFormMode, string> = {
+  create: '在庫を登録',
+  edit: '在庫を編集',
+};
 
 type Props = {
   /** モーダルを開くかどうか */
@@ -14,7 +26,11 @@ type Props = {
   onClose: () => void;
   categories?: Category[];
   storageLocations?: StorageLocation[];
-  /** 登録が成立したときに呼ぶ */
+  /** フォームの動作モード。タイトル・送信ラベルの出し分けに使う。省略時は 'create' */
+  mode?: InventoryFormMode;
+  /** 編集対象の初期値。mode='edit' のときに渡す */
+  initialValues?: InventoryFormValues;
+  /** 登録・更新が成立したときに呼ぶ */
   onSubmit: (draft: InventoryDraft) => void;
 };
 
@@ -23,6 +39,8 @@ export const InventoryFormModal = ({
   onClose,
   categories = [],
   storageLocations = [],
+  mode = 'create',
+  initialValues,
   onSubmit,
 }: Props) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -92,7 +110,7 @@ export const InventoryFormModal = ({
         <div className={styles.content}>
           <div className={styles.header}>
             <h2 id={titleId} className={styles.title}>
-              在庫を登録
+              {TITLES[mode]}
             </h2>
             <button type="button" className={styles.close} onClick={onClose}>
               閉じる
@@ -102,6 +120,8 @@ export const InventoryFormModal = ({
           <InventoryForm
             categories={categories}
             storageLocations={storageLocations}
+            mode={mode}
+            initialValues={initialValues}
             onSubmit={onSubmit}
             onCancel={onClose}
           />

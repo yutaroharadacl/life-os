@@ -5,6 +5,7 @@ import { getExpirationInfo } from '../../utils/expiration';
 import { formatDate } from '../../utils/formatDate';
 import { groupByStorage } from '../../utils/groupInventories';
 import { sortInventories } from '../../utils/sortInventories';
+import { InventoryRowActions } from '../InventoryRowActions';
 
 import styles from './InventoryTable.module.scss';
 
@@ -37,6 +38,10 @@ type Props = {
   sortOrder?: SortOrder;
   /** 0件のときのメッセージ。省略時は「登録されている在庫はありません。」 */
   emptyMessage?: string;
+  /** 「編集」を押したときに、対象の在庫とともに呼ぶ。省略時は何もしない */
+  onEdit?: (inventory: Inventory) => void;
+  /** 削除確認で「削除する」を押したときに、対象の在庫とともに呼ぶ。省略時は何もしない */
+  onDelete?: (inventory: Inventory) => void;
 };
 
 export const InventoryTable = ({
@@ -45,6 +50,8 @@ export const InventoryTable = ({
   action,
   sortOrder = 'expirationAsc',
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
+  onEdit = () => {},
+  onDelete = () => {},
 }: Props) => {
   const groups = groupByStorage(inventories);
 
@@ -81,6 +88,7 @@ export const InventoryTable = ({
                       </th>
                       <th scope="col">期限</th>
                       <th scope="col">残り日数</th>
+                      <th scope="col">操作</th>
                     </tr>
                   </thead>
 
@@ -98,6 +106,13 @@ export const InventoryTable = ({
                           <td>{formatDate(inventory.expirationDate)}</td>
                           <td className={statusClassNames[expiration.status]}>
                             {expiration.label}
+                          </td>
+                          <td>
+                            <InventoryRowActions
+                              inventory={inventory}
+                              onEdit={onEdit}
+                              onDelete={onDelete}
+                            />
                           </td>
                         </tr>
                       );

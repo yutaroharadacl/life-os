@@ -2,13 +2,24 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Category, StorageLocation } from '../../types';
+import { Category, InventoryFormValues, StorageLocation } from '../../types';
 
 import { InventoryFormModal } from './InventoryFormModal';
 
 // テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
 const categories: Category[] = [{ id: 'c1', name: '野菜' }];
 const storageLocations: StorageLocation[] = [{ id: 's1', name: '冷蔵庫' }];
+
+const createFormValues = (overrides: Partial<InventoryFormValues> = {}): InventoryFormValues => ({
+  category: '野菜',
+  expirationDate: '2026-08-20',
+  memo: '',
+  name: '白菜',
+  purchaseDate: '2026-08-03',
+  quantity: '2',
+  storage: '冷蔵庫',
+  ...overrides,
+});
 
 const fillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.type(screen.getByLabelText('食品名'), '牛乳');
@@ -220,6 +231,77 @@ describe('InventoryFormModal', () => {
       );
 
       expect(screen.queryByLabelText('食品名')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('編集モード', () => {
+    it('mode省略時はダイアログのアクセシブル名が在庫を登録のままになる', () => {
+      render(
+        <InventoryFormModal
+          open
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      expect(screen.getByRole('dialog', { name: '在庫を登録' })).toBeInTheDocument();
+    });
+
+    it('mode=editのときダイアログのアクセシブル名が在庫を編集になり送信ボタンが更新するになる', () => {
+      render(
+        <InventoryFormModal
+          open
+          mode="edit"
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      expect(screen.getByRole('dialog', { name: '在庫を編集' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '更新する' })).toBeInTheDocument();
+    });
+
+    it('mode=editでinitialValuesを渡すと入力欄にその値が反映される', () => {
+      render(
+        <InventoryFormModal
+          open
+          mode="edit"
+          initialValues={createFormValues({ name: '白菜' })}
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      expect(screen.getByLabelText('食品名')).toHaveValue('白菜');
+      expect(screen.getByLabelText('数量')).toHaveValue(2);
+    });
+
+    it('mode=editでフォーム送信が成立するとonSubmitがdraft付きで呼ばれる', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(
+        <InventoryFormModal
+          open
+          mode="edit"
+          initialValues={createFormValues({ name: '白菜' })}
+          onClose={vi.fn()}
+          onSubmit={onSubmit}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: '更新する' }));
+
+      await vi.waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: '白菜' }));
+      });
     });
   });
 });
