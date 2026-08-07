@@ -1,3 +1,5 @@
+import { ReactNode } from 'react';
+
 import { ExpirationStatus, Inventory } from '../../types';
 import { getExpirationInfo } from '../../utils/expiration';
 import { formatDate } from '../../utils/formatDate';
@@ -20,11 +22,17 @@ const statusClassNames: Record<ExpirationStatus, string> = {
 type Props = {
   /** 表示する在庫。グループ化と並び替えはこのコンポーネントで行う */
   inventories?: Inventory[];
-  /** 期限日数の基準日。省略時は当日 */
+  /**
+   * 期限日数の基準日。省略時は当日。
+   * クライアント境界から使う場合は必ず呼び出し元で求めた値を渡すこと
+   * （既定値に頼るとサーバーとブラウザで別々の日付になり表示が食い違う）。
+   */
   today?: Date;
+  /** ヘッダ右側に置く操作要素（例: 登録ボタン）。省略時は何も描画しない */
+  action?: ReactNode;
 };
 
-export const InventoryTable = ({ inventories = [], today = new Date() }: Props) => {
+export const InventoryTable = ({ inventories = [], today = new Date(), action }: Props) => {
   const groups = groupByStorage(inventories);
 
   return (
@@ -32,6 +40,7 @@ export const InventoryTable = ({ inventories = [], today = new Date() }: Props) 
       <div className={styles.header}>
         <h1 className={styles.title}>在庫一覧</h1>
         <span className={styles.count}>全 {inventories.length} 件</span>
+        {action && <div className={styles.action}>{action}</div>}
       </div>
 
       {groups.length === 0 ? (

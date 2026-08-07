@@ -14,6 +14,11 @@
   gap: 12px;
 }
 
+/* 操作要素はヘッダの右端へ寄せる */
+.action {
+  margin-left: auto;
+}
+
 .title {
   font-size: 1.25rem;
   font-weight: 700;

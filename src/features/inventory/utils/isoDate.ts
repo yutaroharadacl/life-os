@@ -57,3 +57,17 @@ export const parseIsoDate = (isoDate: string): IsoDateParts | null => {
  * タイムゾーンの影響を受けないよう UTC 基準で揃える。
  */
 export const toDayValue = (parts: IsoDateParts): number => toUtcDate(parts).getTime();
+
+/**
+ * Date を ISO 形式（YYYY-MM-DD）の文字列にする。
+ * 利用者から見た「今日」と一致させるため、UTC ではなくローカルタイムの年月日を使う。
+ * @param date - 変換する日付
+ * @returns ISO 形式の日付文字列
+ */
+export const formatIsoDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};

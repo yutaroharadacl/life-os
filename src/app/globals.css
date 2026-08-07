@@ -11,6 +11,14 @@
   --color-border: #e5e7eb;
   /* テーブルヘッダ・空状態の背景 */
   --color-surface: #f9fafb;
+  /* 主ボタンの背景 */
+  --color-accent: #2563eb;
+  /* 主ボタンの文字 */
+  --color-accent-foreground: #ffffff;
+  /* モーダルの背景 */
+  --color-overlay: rgb(0 0 0 / 50%);
+  /* 入力欄の背景 */
+  --color-input-background: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,6 +30,10 @@
     --color-muted: #9ca3af;
     --color-border: #2a2a2a;
     --color-surface: #161616;
+    --color-accent: #3b82f6;
+    --color-accent-foreground: #0a0a0a;
+    --color-overlay: rgb(0 0 0 / 70%);
+    --color-input-background: #161616;
   }
 }
 

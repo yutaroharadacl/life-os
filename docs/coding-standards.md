@@ -166,6 +166,16 @@ import styles from './InventoryList.module.scss'; // sibling
 - クエリの優先順位: `getByRole` > `getByLabelText` > `getByText` > `getByTestId`
 - 実装詳細（内部 state、クラス名、呼び出し回数）に依存しない。スナップショットテストは使わない。
 
+#### `useActionState` / `<form action>` を使うコンポーネントのテスト
+
+送信は非同期のトランジションとして実行され、`user.click()` で送信ボタンを押した
+**直後は状態更新がまだ反映されていない**ことがある。同期的に `expect` すると
+間欠的に失敗する（テスト単体では再現しにくく、他のテストと合わせて実行したときだけ現れうる）。
+
+送信結果（DOM の変化・モーダルの開閉・一覧への反映・モック関数の呼び出しなど）を
+検証する場合は、必ず `await screen.findByText(...)` や `await waitFor(() => expect(...))` を使う。
+`expect(onSubmit).toHaveBeenCalledWith(...)` のようなモック呼び出しの検証も対象。
+
 ### 禁止事項
 
 - テストを通すためにアサーションを弱める・削除する

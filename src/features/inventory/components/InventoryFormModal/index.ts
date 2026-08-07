@@ -1,0 +1,1 @@
+export { InventoryFormModal } from './InventoryFormModal';

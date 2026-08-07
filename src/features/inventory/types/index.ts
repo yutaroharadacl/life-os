@@ -14,7 +14,38 @@ export type Inventory = {
   expirationDate: string | null;
   /** 購入日。ISO 形式（YYYY-MM-DD） */
   purchaseDate: string;
+  /** メモ。未入力は空文字 */
+  memo: string;
 };
+
+/** 新規登録の入力値。ID はサーバーが採番するため持たない */
+export type InventoryDraft = Omit<Inventory, 'id'>;
+
+/** カテゴリマスタ */
+export type Category = {
+  id: string;
+  name: string;
+};
+
+/** 保管場所マスタ。DOM の組み込み型 `Storage` と衝突するため `StorageLocation` とする */
+export type StorageLocation = {
+  id: string;
+  name: string;
+};
+
+/** 登録フォームの入力値。入力欄の生の値なのですべて文字列で持つ */
+export type InventoryFormValues = {
+  name: string;
+  category: string;
+  storage: string;
+  quantity: string;
+  expirationDate: string;
+  purchaseDate: string;
+  memo: string;
+};
+
+/** フィールドごとのエラーメッセージ。エラーのないフィールドはキーを持たない */
+export type InventoryFormErrors = Partial<Record<keyof InventoryFormValues, string>>;
 
 /** 期限の状態 */
 export type ExpirationStatus = 'expired' | 'warning' | 'normal' | 'none';
@@ -42,4 +73,5 @@ export type InventoryResponse = {
   quantity: number;
   expiration_date: string | null;
   purchase_date: string;
+  memo: string;
 };

@@ -1,20 +1,12 @@
 import { Inventory } from '../types';
-
-/** Date を ISO 形式（YYYY-MM-DD）の文字列にする。ローカルタイムの年月日を使う */
-const toIsoDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-};
+import { formatIsoDate } from '../utils/isoDate';
 
 /** 当日から指定日数だけずらした日付を ISO 形式で返す（モックデータ用） */
 const shiftDays = (days: number): string => {
   const date = new Date();
   date.setDate(date.getDate() + days);
 
-  return toIsoDate(date);
+  return formatIsoDate(date);
 };
 
 /**
@@ -33,6 +25,7 @@ export const getInventories = (): Inventory[] => [
     // 期限切れ
     expirationDate: shiftDays(-2),
     purchaseDate: shiftDays(-5),
+    memo: '火曜までに使い切る',
   },
   {
     id: '2',
@@ -43,6 +36,7 @@ export const getInventories = (): Inventory[] => [
     // 期限間近
     expirationDate: shiftDays(2),
     purchaseDate: shiftDays(-3),
+    memo: '',
   },
   {
     id: '3',
@@ -53,6 +47,7 @@ export const getInventories = (): Inventory[] => [
     // 期限なし
     expirationDate: null,
     purchaseDate: shiftDays(-3),
+    memo: '半分使用済み',
   },
   {
     id: '4',
@@ -63,6 +58,7 @@ export const getInventories = (): Inventory[] => [
     // 余裕あり
     expirationDate: shiftDays(116),
     purchaseDate: shiftDays(-17),
+    memo: '',
   },
   {
     id: '5',
@@ -72,6 +68,7 @@ export const getInventories = (): Inventory[] => [
     quantity: 3,
     expirationDate: shiftDays(221),
     purchaseDate: shiftDays(-3),
+    memo: '',
   },
   {
     id: '6',
@@ -81,5 +78,6 @@ export const getInventories = (): Inventory[] => [
     quantity: 1,
     expirationDate: null,
     purchaseDate: shiftDays(-57),
+    memo: '開封済み',
   },
 ];
