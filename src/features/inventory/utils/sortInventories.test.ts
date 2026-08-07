@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { Inventory } from '../types';
 
-import { sortByExpiration } from './sortInventories';
+import { sortByExpiration, sortInventories } from './sortInventories';
 
 // テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
 const createInventory = (overrides: Partial<Inventory> = {}): Inventory => ({
@@ -97,6 +97,82 @@ describe('sortByExpiration', () => {
       sortByExpiration(inventories);
 
       expect(inventories.map((item) => item.name)).toEqual(['B', 'A']);
+    });
+  });
+});
+
+describe('sortInventories', () => {
+  describe('正常系', () => {
+    it('sortOrderを省略すると既定のexpirationAscとしてsortByExpirationと同じ順序になる', () => {
+      const inventories = [
+        createInventory({ name: 'B', expirationDate: '2026-08-10' }),
+        createInventory({ name: 'A', expirationDate: '2026-08-06' }),
+        createInventory({ name: '期限なし', expirationDate: null, purchaseDate: '2026-08-01' }),
+      ];
+
+      const result = sortInventories(inventories);
+
+      expect(result.map((item) => item.name)).toEqual(
+        sortByExpiration(inventories).map((item) => item.name),
+      );
+    });
+
+    it('sortOrderにexpirationAscを指定すると期限が近い順に並ぶ', () => {
+      const inventories = [
+        createInventory({ name: 'B', expirationDate: '2026-08-10' }),
+        createInventory({ name: 'A', expirationDate: '2026-08-06' }),
+      ];
+
+      const result = sortInventories(inventories, 'expirationAsc');
+
+      expect(result.map((item) => item.name)).toEqual(['A', 'B']);
+    });
+
+    it('sortOrderにnameAscを指定すると食品名の昇順（あいうえお順）に並ぶ', () => {
+      const inventories = [
+        createInventory({ name: 'う', expirationDate: '2026-08-06' }),
+        createInventory({ name: 'あ', expirationDate: '2026-08-20' }),
+        createInventory({ name: 'い', expirationDate: '2026-08-10' }),
+      ];
+
+      const result = sortInventories(inventories, 'nameAsc');
+
+      expect(result.map((item) => item.name)).toEqual(['あ', 'い', 'う']);
+    });
+  });
+
+  describe('異常系', () => {
+    it('引数を省略すると空配列を返す', () => {
+      const result = sortInventories();
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('境界値', () => {
+    it('空配列を渡すと空配列を返す', () => {
+      const result = sortInventories([], 'nameAsc');
+
+      expect(result).toEqual([]);
+    });
+
+    it('1件のときはそのまま1件を返す', () => {
+      const inventories = [createInventory({ name: '白菜' })];
+
+      const result = sortInventories(inventories, 'nameAsc');
+
+      expect(result.map((item) => item.name)).toEqual(['白菜']);
+    });
+
+    it('元の配列を破壊しない', () => {
+      const inventories = [
+        createInventory({ name: 'う', expirationDate: '2026-08-06' }),
+        createInventory({ name: 'あ', expirationDate: '2026-08-20' }),
+      ];
+
+      sortInventories(inventories, 'nameAsc');
+
+      expect(inventories.map((item) => item.name)).toEqual(['う', 'あ']);
     });
   });
 });

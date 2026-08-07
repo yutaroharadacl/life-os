@@ -1,4 +1,4 @@
-import { Inventory } from '../types';
+import { Inventory, SortOrder } from '../types';
 
 /**
  * 在庫を期限が近い順に並び替える。
@@ -23,3 +23,20 @@ export const sortByExpiration = (inventories: Inventory[] = []): Inventory[] =>
 
     return a.purchaseDate.localeCompare(b.purchaseDate);
   });
+
+/**
+ * 在庫を指定した並び替え順で並び替える。
+ * @param inventories - 並び替える在庫
+ * @param sortOrder - 並び替え順。省略時は 'expirationAsc'（期限が近い順）
+ * @returns 並び替えた新しい配列（引数の配列は変更しない）
+ */
+export const sortInventories = (
+  inventories: Inventory[] = [],
+  sortOrder: SortOrder = 'expirationAsc',
+): Inventory[] => {
+  if (sortOrder === 'nameAsc') {
+    return [...inventories].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  }
+
+  return sortByExpiration(inventories);
+};
