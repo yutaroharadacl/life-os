@@ -9,6 +9,7 @@ const createInventory = (overrides: Partial<Inventory> = {}): Inventory => ({
   category: '野菜',
   expirationDate: null,
   id: '1',
+  memo: '',
   name: '白菜',
   purchaseDate: '2026-08-03',
   quantity: 1,

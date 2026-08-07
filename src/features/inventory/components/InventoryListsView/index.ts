@@ -1,0 +1,1 @@
+export { InventoryListsView } from './InventoryListsView';

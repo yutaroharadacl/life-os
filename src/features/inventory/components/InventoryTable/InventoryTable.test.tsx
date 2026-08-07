@@ -10,6 +10,7 @@ const createInventory = (overrides: Partial<Inventory> = {}): Inventory => ({
   category: '野菜',
   expirationDate: null,
   id: '1',
+  memo: '',
   name: '白菜',
   purchaseDate: '2026-08-03',
   quantity: 1,
@@ -174,6 +175,25 @@ describe('InventoryTable', () => {
 
       expect(screen.getByText('全 1 件')).toBeInTheDocument();
       expect(screen.getAllByRole('table')).toHaveLength(1);
+    });
+
+    it('actionに要素を渡すとヘッダ内に描画される', () => {
+      render(
+        <InventoryTable
+          inventories={[createInventory()]}
+          today={today}
+          action={<button type="button">在庫を登録</button>}
+        />,
+      );
+
+      expect(screen.getByRole('button', { name: '在庫を登録' })).toBeInTheDocument();
+    });
+
+    it('actionを省略しても既存の表示が壊れない', () => {
+      render(<InventoryTable inventories={[createInventory()]} today={today} />);
+
+      expect(screen.getByRole('heading', { name: '在庫一覧' })).toBeInTheDocument();
+      expect(screen.getByText('全 1 件')).toBeInTheDocument();
     });
   });
 });

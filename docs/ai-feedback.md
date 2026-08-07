@@ -40,6 +40,40 @@
 | 3   | 設計書テンプレートの「3. 画面・UI 仕様」に見出しレベル（`h1`〜`h3`）を明記する欄を追加する           | テンプレートに見出しの HTML レベルを指定する項目がなく、ページに `<h1>` が無いまま実装された                            | `docs/design/_template.md`、`detail-design` スキル      | 反映済み（`docs/design/_template.md`「3. 画面・UI 仕様」に「見出し階層」表を追加）                                                                           |
 | 4   | テンプレートの「7. API 仕様」モック節に「日付は基準日からの相対値で生成する」指針を追加する          | モックデータの日付をどう持つべきかの指針がなく、絶対日付がハードコードされた                                            | `docs/design/_template.md`、`detail-design` スキル      | 反映済み（`docs/design/_template.md`「7. API 仕様 / 現段階のモック実装」）                                                                                   |
 
+### 2026-08-06 / 在庫登録（モーダル）
+
+設計書: [docs/design/inventory-registration.md](design/inventory-registration.md)
+
+| #   | 提案内容                                                                                                   | 逸脱の原因                                                                                                   | 反映先候補                                              | ステータス                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 1   | `useActionState` / `<form action>` を使うコンポーネントのテストは、送信結果の検証を必ず `waitFor` / `findBy*` で行うルールを明文化する | `docs/coding-standards.md` に非同期送信（トランジション）特有の待ち方の指針がなく、同一ファイル内でも書き方が割れ、フルスイート実行時のみ間欠的に失敗するテストが複数残った | `docs/coding-standards.md` §7（テスト）                  | 反映済み（`docs/coding-standards.md`「何をテストするか」に `useActionState` 節を追加） |
+| 2   | レビュー指摘で追加した振る舞い（例: `crypto.randomUUID` 非対応環境のフォールバック）は、実装の本文だけでなく設計書「9. テスト観点」のチェックリストにも機械的に反映する | コードレビューで追加した振る舞いが「7. API仕様」本文には反映されたが、「9. テスト観点」チェックリストへの反映が漏れていた | `docs/design/inventory-registration.md`「9. テスト観点」 | 反映済み（`createInventory(draft)` に異常系2件を追記）                                 |
+
+**詳細**
+
+**#1 — `useActionState` を使うテストの待ち方**
+
+`InventoryForm` を `FormEvent` + `event.preventDefault()` から React 19 の
+`<form action={submitAction}>` + `useActionState` に置き換えた際、送信ボタンを押した
+直後に同期的に `expect` するテストが複数残った。`InventoryFormModal.test.tsx` の
+「閉じる」テストなど一部は経験的に `waitFor` を使っていたが、`InventoryListsView.test.tsx`
+の登録後アサーション（一覧反映・完了メッセージ・件数など）と `InventoryForm.test.tsx` の
+`onSubmit` 呼び出し検証は同期的なままで、`pnpm test` をフルスイートで12回連続実行すると
+2回失敗することを確認した。すべて `await screen.findByText(...)` / `await waitFor(...)` に
+是正済み（是正後は12回連続成功を確認）。
+
+2026-08-06 反映（ユーザー承認済み）。`docs/coding-standards.md`「何をテストするか」に
+`useActionState` / `<form action>` 特有の待ち方の指針を追加した。
+
+**#2 — 設計書のテスト観点チェックリストへの反映漏れ**
+
+コードレビューで `createInventory` に `crypto.randomUUID` 非対応環境向けのフォールバックを
+追加した際、設計書「7. API仕様」の本文には理由を追記したが、「9. テスト観点」の
+チェックリストには反映し忘れていた（実装済みのテストとの乖離）。
+
+2026-08-06 反映（ユーザー承認済み）。`docs/design/inventory-registration.md`
+「9. テスト観点」の `createInventory(draft)` に異常系2件を追記した。
+
 **詳細**
 
 **#1 — `pnpm build` によるレンダリング種別の確認**

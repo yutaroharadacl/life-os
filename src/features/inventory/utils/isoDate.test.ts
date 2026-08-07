@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseIsoDate } from './isoDate';
+import { formatIsoDate, parseIsoDate } from './isoDate';
 
 describe('parseIsoDate', () => {
   describe('正常系', () => {
@@ -50,6 +50,31 @@ describe('parseIsoDate', () => {
 
     it('西暦100年未満でも1900年代に読み替えない', () => {
       expect(parseIsoDate('0026-08-06')).toEqual({ year: 26, month: 8, day: 6 });
+    });
+  });
+});
+
+describe('formatIsoDate', () => {
+  describe('正常系', () => {
+    it('日付をYYYY-MM-DD形式の文字列に変換する', () => {
+      const date = new Date(2026, 7, 6);
+
+      expect(formatIsoDate(date)).toBe('2026-08-06');
+    });
+  });
+
+  describe('境界値', () => {
+    it('月・日が1桁のときは0埋めされる', () => {
+      const date = new Date(2026, 0, 5);
+
+      expect(formatIsoDate(date)).toBe('2026-01-05');
+    });
+
+    it('ローカルタイムの年月日を使い、UTC変換で日付がずれない', () => {
+      // UTCに変換すると前日になりうる深夜0時に近い時刻で確認する
+      const date = new Date(2026, 7, 6, 0, 30);
+
+      expect(formatIsoDate(date)).toBe('2026-08-06');
     });
   });
 });
