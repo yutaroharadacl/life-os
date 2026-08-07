@@ -3,11 +3,17 @@
 import { useState } from 'react';
 
 import { createInventory } from '../../api/createInventory';
+import { useInventoryFilterStore } from '../../stores/useInventoryFilterStore';
 import { Category, Inventory, InventoryDraft, StorageLocation } from '../../types';
+import { filterInventories } from '../../utils/filterInventories';
+import { InventoryFilterBar } from '../InventoryFilterBar';
 import { InventoryFormModal } from '../InventoryFormModal';
 import { InventoryTable } from '../InventoryTable';
 
 import styles from './InventoryListsView.module.scss';
+
+/** 絞り込み条件に一致する在庫が1件もないときのメッセージ（未登録の0件とは区別する） */
+const NO_MATCH_MESSAGE = '該当する在庫が見つかりません。';
 
 type Props = {
   /** 初期表示する在庫（Server Component から受け取るモック） */
@@ -40,11 +46,23 @@ export const InventoryListsView = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [flashMessage, setFlashMessage] = useState('');
 
+  const keyword = useInventoryFilterStore((state) => state.keyword);
+  const category = useInventoryFilterStore((state) => state.category);
+  const storage = useInventoryFilterStore((state) => state.storage);
+  const sortOrder = useInventoryFilterStore((state) => state.sortOrder);
+  const resetFilters = useInventoryFilterStore((state) => state.resetFilters);
+
+  const visibleInventories = filterInventories(inventories, { keyword, category, storage });
+  // 未登録の0件（inventories が空）と、絞り込み結果の0件は表示を分ける
+  const emptyMessage = inventories.length > 0 ? NO_MATCH_MESSAGE : undefined;
+
   const handleSubmit = (draft: InventoryDraft) => {
     const created = createInventory(draft);
 
     // 表示位置は InventoryTable のグループ化と並び替えが決めるため、末尾に足すだけでよい
     setInventories((previous) => [...previous, created]);
+    // 絞り込み条件が残っていると登録した在庫が一覧に映らないことがあるため、登録時にクリアする
+    resetFilters();
     setIsModalOpen(false);
     setFlashMessage(`${created.name}を登録しました`);
   };
@@ -62,9 +80,13 @@ export const InventoryListsView = ({
         </p>
       )}
 
+      <InventoryFilterBar categories={categories} storageLocations={storageLocations} />
+
       <InventoryTable
-        inventories={inventories}
+        inventories={visibleInventories}
         today={today}
+        sortOrder={sortOrder}
+        emptyMessage={emptyMessage}
         action={
           <button type="button" className={styles.register} onClick={handleOpen}>
             在庫を登録

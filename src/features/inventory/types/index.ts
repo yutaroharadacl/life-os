@@ -64,6 +64,34 @@ export type InventoryGroup = {
   inventories: Inventory[];
 };
 
+/** 並び替えの選択肢。expirationAsc: 期限が近い順（既定） / nameAsc: 食品名順 */
+export type SortOrder = 'expirationAsc' | 'nameAsc';
+
+/** 一覧の絞り込み・並び替え条件 */
+export type InventoryFilterState = {
+  /** キーワード検索の入力値。空文字は「絞り込みなし」 */
+  keyword: string;
+  /** カテゴリ名。空文字は「すべて」 */
+  category: string;
+  /** 保管場所名。空文字は「すべて」 */
+  storage: string;
+  /** 並び替え順 */
+  sortOrder: SortOrder;
+};
+
+/** filterInventories の絞り込み条件。並び替え順は絞り込みに関係しないため対象外 */
+export type InventoryFilters = Pick<InventoryFilterState, 'keyword' | 'category' | 'storage'>;
+
+/** useInventoryFilterStore（Zustand）が公開する状態と操作 */
+export type InventoryFilterStore = InventoryFilterState & {
+  setKeyword: (keyword: string) => void;
+  setCategory: (category: string) => void;
+  setStorage: (storage: string) => void;
+  setSortOrder: (sortOrder: SortOrder) => void;
+  /** キーワード・カテゴリ・保管場所を初期値に戻す。並び替えは表示の見せ方であり絞り込み条件とは性質が異なるため変更しない */
+  resetFilters: () => void;
+};
+
 /** 在庫 API のレスポンス（将来の Go バックエンドとの契約） */
 export type InventoryResponse = {
   id: string;

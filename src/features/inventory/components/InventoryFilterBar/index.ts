@@ -1,0 +1,1 @@
+export { InventoryFilterBar } from './InventoryFilterBar';

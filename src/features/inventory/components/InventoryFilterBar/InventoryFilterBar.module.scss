@@ -1,0 +1,65 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 960px;
+  /* InventoryTable の container と左右の余白を揃える */
+  margin: 16px auto 0;
+  padding: 0 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  input,
+  select {
+    width: 100%;
+    /* スマホでの片手操作に耐えるタップ領域を確保する（要件 7） */
+    min-height: 44px;
+    padding: 8px 12px;
+    color: inherit;
+    font-family: inherit;
+    font-size: 1rem;
+    background-color: var(--color-input-background);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+}
+
+.clear {
+  min-height: 44px;
+  padding: 0 16px;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* タブレット以上では横並びにし、はみ出す分だけ折り返す */
+@media (min-width: 600px) {
+  .container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .field {
+    flex: 1 1 160px;
+  }
+
+  .clear {
+    flex: 0 0 auto;
+  }
+}

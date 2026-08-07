@@ -133,6 +133,22 @@ describe('InventoryTable', () => {
       // 1行目はヘッダ行なので、2行目が最も期限の近い在庫になる
       expect(within(rows[1]).getByText('近い')).toBeInTheDocument();
     });
+
+    it('sortOrderにnameAscを渡すとグループ内の行が食品名の昇順に並ぶ', () => {
+      const inventories = [
+        createInventory({ id: '1', name: 'う', expirationDate: '2026-08-06' }),
+        createInventory({ id: '2', name: 'あ', expirationDate: '2026-08-20' }),
+        createInventory({ id: '3', name: 'い', expirationDate: '2026-08-10' }),
+      ];
+
+      render(<InventoryTable inventories={inventories} today={today} sortOrder="nameAsc" />);
+
+      const table = screen.getByRole('table');
+      const rows = within(table).getAllByRole('row');
+      expect(within(rows[1]).getByText('あ')).toBeInTheDocument();
+      expect(within(rows[2]).getByText('い')).toBeInTheDocument();
+      expect(within(rows[3]).getByText('う')).toBeInTheDocument();
+    });
   });
 
   describe('異常系', () => {
@@ -194,6 +210,28 @@ describe('InventoryTable', () => {
 
       expect(screen.getByRole('heading', { name: '在庫一覧' })).toBeInTheDocument();
       expect(screen.getByText('全 1 件')).toBeInTheDocument();
+    });
+
+    it('emptyMessageを渡すと0件のときその文言が表示される', () => {
+      render(
+        <InventoryTable
+          inventories={[]}
+          today={today}
+          emptyMessage="該当する在庫が見つかりません。"
+        />,
+      );
+
+      expect(screen.getByText('該当する在庫が見つかりません。')).toBeInTheDocument();
+      expect(screen.queryByText('登録されている在庫はありません。')).not.toBeInTheDocument();
+    });
+
+    it('sortOrderとemptyMessageを省略しても既存の表示が壊れない', () => {
+      const inventories = [createInventory({ expirationDate: '2026-08-10' })];
+
+      render(<InventoryTable inventories={inventories} today={today} />);
+
+      expect(screen.getByText('全 1 件')).toBeInTheDocument();
+      expect(screen.getByRole('table')).toBeInTheDocument();
     });
   });
 });

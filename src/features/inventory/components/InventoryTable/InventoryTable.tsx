@@ -1,15 +1,18 @@
 import { ReactNode } from 'react';
 
-import { ExpirationStatus, Inventory } from '../../types';
+import { ExpirationStatus, Inventory, SortOrder } from '../../types';
 import { getExpirationInfo } from '../../utils/expiration';
 import { formatDate } from '../../utils/formatDate';
 import { groupByStorage } from '../../utils/groupInventories';
-import { sortByExpiration } from '../../utils/sortInventories';
+import { sortInventories } from '../../utils/sortInventories';
 
 import styles from './InventoryTable.module.scss';
 
 /** カテゴリが未設定のときの表示 */
 const UNSPECIFIED_CATEGORY = '未指定';
+
+/** 0件のときの既定メッセージ */
+const DEFAULT_EMPTY_MESSAGE = '登録されている在庫はありません。';
 
 /** 期限の状態ごとの文字色 */
 const statusClassNames: Record<ExpirationStatus, string> = {
@@ -30,9 +33,19 @@ type Props = {
   today?: Date;
   /** ヘッダ右側に置く操作要素（例: 登録ボタン）。省略時は何も描画しない */
   action?: ReactNode;
+  /** グループ内の並び替え順。省略時は 'expirationAsc'（既存の挙動） */
+  sortOrder?: SortOrder;
+  /** 0件のときのメッセージ。省略時は「登録されている在庫はありません。」 */
+  emptyMessage?: string;
 };
 
-export const InventoryTable = ({ inventories = [], today = new Date(), action }: Props) => {
+export const InventoryTable = ({
+  inventories = [],
+  today = new Date(),
+  action,
+  sortOrder = 'expirationAsc',
+  emptyMessage = DEFAULT_EMPTY_MESSAGE,
+}: Props) => {
   const groups = groupByStorage(inventories);
 
   return (
@@ -44,7 +57,7 @@ export const InventoryTable = ({ inventories = [], today = new Date(), action }:
       </div>
 
       {groups.length === 0 ? (
-        <p className={styles.empty}>登録されている在庫はありません。</p>
+        <p className={styles.empty}>{emptyMessage}</p>
       ) : (
         groups.map((group, groupIndex) => {
           // 保管場所名は空白を含みうる（id に使うと aria-labelledby が壊れる）ため連番で作る
@@ -72,7 +85,7 @@ export const InventoryTable = ({ inventories = [], today = new Date(), action }:
                   </thead>
 
                   <tbody>
-                    {sortByExpiration(group.inventories).map((inventory) => {
+                    {sortInventories(group.inventories, sortOrder).map((inventory) => {
                       const expiration = getExpirationInfo(inventory, today);
 
                       return (
