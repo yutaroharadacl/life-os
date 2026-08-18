@@ -21,18 +21,6 @@ export type Inventory = {
 /** 新規登録の入力値。ID はサーバーが採番するため持たない */
 export type InventoryDraft = Omit<Inventory, 'id'>;
 
-/** カテゴリマスタ */
-export type Category = {
-  id: string;
-  name: string;
-};
-
-/** 保管場所マスタ。DOM の組み込み型 `Storage` と衝突するため `StorageLocation` とする */
-export type StorageLocation = {
-  id: string;
-  name: string;
-};
-
 /** 登録フォームの入力値。入力欄の生の値なのですべて文字列で持つ */
 export type InventoryFormValues = {
   name: string;

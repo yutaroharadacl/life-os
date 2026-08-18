@@ -2,7 +2,7 @@ import { Category } from '../types';
 
 /**
  * カテゴリマスタを取得する。
- * Go バックエンド（GET /api/categories）とマスタ管理画面（要件 5-2）が未実装のためモック。
+ * Go バックエンド（GET /api/categories）が未実装のためモック。
  * 要件定義書「5-2. カテゴリマスター管理機能」の初期値をそのまま返す。
  */
 export const getCategories = (): Category[] => [

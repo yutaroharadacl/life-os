@@ -1,12 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { createInventory } from '../../api/createInventory';
 import { deleteInventory } from '../../api/deleteInventory';
 import { updateInventory } from '../../api/updateInventory';
 import { useInventoryFilterStore } from '../../stores/useInventoryFilterStore';
-import { Category, Inventory, InventoryDraft, StorageLocation } from '../../types';
+import { Inventory, InventoryDraft } from '../../types';
 import { filterInventories } from '../../utils/filterInventories';
 import { toInventoryFormValues } from '../../utils/toInventoryFormValues';
 import { InventoryFilterBar } from '../InventoryFilterBar';
@@ -14,6 +15,8 @@ import { InventoryFormModal } from '../InventoryFormModal';
 import { InventoryTable } from '../InventoryTable';
 
 import styles from './InventoryListsView.module.scss';
+
+import { Category, StorageLocation } from '@/shared/types';
 
 /** 絞り込み条件に一致する在庫が1件もないときのメッセージ（未登録の0件とは区別する） */
 const NO_MATCH_MESSAGE = '該当する在庫が見つかりません。';
@@ -128,9 +131,14 @@ export const InventoryListsView = ({
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         action={
-          <button type="button" className={styles.register} onClick={handleOpenCreate}>
-            在庫を登録
-          </button>
+          <div className={styles.actions}>
+            <Link href="/master" className={styles.masterLink}>
+              マスタ管理
+            </Link>
+            <button type="button" className={styles.register} onClick={handleOpenCreate}>
+              在庫を登録
+            </button>
+          </div>
         }
       />
 

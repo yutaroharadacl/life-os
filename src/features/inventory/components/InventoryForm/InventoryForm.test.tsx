@@ -2,9 +2,11 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Category, InventoryFormValues, StorageLocation } from '../../types';
+import { InventoryFormValues } from '../../types';
 
 import { InventoryForm } from './InventoryForm';
+
+import { Category, StorageLocation } from '@/shared/types';
 
 // テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
 const createCategories = (overrides: Category[] = []): Category[] =>
