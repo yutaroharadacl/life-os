@@ -218,5 +218,7 @@ import styles from './InventoryList.module.scss'; // sibling
 
 ## 9. バックエンド（Go / PostgreSQL）
 
-**現時点では未着手**。実装が始まった段階で、本ファイルにディレクトリ構成・パッケージ命名・
-エラーハンドリング・テスト規約を追記すること。実体のない規約を先に書かない。
+**別リポジトリで管理する**（`../backend`、`next_go_practice/backend`）。
+フロントエンドとバックエンドのリリースサイクルを分離するため、`my-app` とは別に
+`git init` 済み。Go 側の規約・ワークフローは `backend/CLAUDE.md` と
+`backend/docs/coding-standards.md` を参照すること。本ファイルには追記しない。
