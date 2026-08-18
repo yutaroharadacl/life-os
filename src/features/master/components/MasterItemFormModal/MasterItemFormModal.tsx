@@ -2,41 +2,37 @@
 
 import { MouseEvent, useEffect, useId, useRef } from 'react';
 
-import { InventoryDraft, InventoryFormMode, InventoryFormValues } from '../../types';
-import { InventoryForm } from '../InventoryForm';
+import { MasterItemFormMode } from '../../types';
+import { MasterItemForm } from '../MasterItemForm';
 
-import styles from './InventoryFormModal.module.scss';
+import styles from './MasterItemFormModal.module.scss';
 
-import { Category, StorageLocation } from '@/shared/types';
-
-/** mode ごとのモーダルタイトル */
-const TITLES: Record<InventoryFormMode, string> = {
-  create: '在庫を登録',
-  edit: '在庫を編集',
-};
+import { MasterItemDraft } from '@/shared/types';
 
 type Props = {
   /** モーダルを開くかどうか */
   open: boolean;
   /** 閉じる操作（キャンセル・ESC・背景クリック）が起きたときに呼ぶ */
   onClose: () => void;
-  categories?: Category[];
-  storageLocations?: StorageLocation[];
+  /** 項目種別のラベル（例: 'カテゴリ' / '保管場所'）。タイトル・入力欄ラベルに使う */
+  itemLabel: string;
   /** フォームの動作モード。タイトル・送信ラベルの出し分けに使う。省略時は 'create' */
-  mode?: InventoryFormMode;
-  /** 編集対象の初期値。mode='edit' のときに渡す */
-  initialValues?: InventoryFormValues;
-  /** 登録・更新が成立したときに呼ぶ */
-  onSubmit: (draft: InventoryDraft) => void;
+  mode?: MasterItemFormMode;
+  /** 編集対象の現在の名称。mode='edit' のときに渡す */
+  initialValue?: string;
+  /** 重複チェック対象の既存名称。編集時は対象自身の名称を除いたもの */
+  existingNames: string[];
+  /** 追加・更新が成立したときに呼ぶ */
+  onSubmit: (draft: MasterItemDraft) => void;
 };
 
-export const InventoryFormModal = ({
+export const MasterItemFormModal = ({
   open,
   onClose,
-  categories = [],
-  storageLocations = [],
+  itemLabel,
   mode = 'create',
-  initialValues,
+  initialValue,
+  existingNames,
   onSubmit,
 }: Props) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -106,18 +102,18 @@ export const InventoryFormModal = ({
         <div className={styles.content}>
           <div className={styles.header}>
             <h2 id={titleId} className={styles.title}>
-              {TITLES[mode]}
+              {mode === 'edit' ? `${itemLabel}を編集` : `${itemLabel}を追加`}
             </h2>
             <button type="button" className={styles.close} onClick={onClose}>
               閉じる
             </button>
           </div>
 
-          <InventoryForm
-            categories={categories}
-            storageLocations={storageLocations}
+          <MasterItemForm
+            itemLabel={itemLabel}
             mode={mode}
-            initialValues={initialValues}
+            initialValue={initialValue}
+            existingNames={existingNames}
             onSubmit={onSubmit}
             onCancel={onClose}
           />

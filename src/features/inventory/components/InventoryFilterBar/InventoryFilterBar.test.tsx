@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useInventoryFilterStore } from '../../stores/useInventoryFilterStore';
-import { Category, InventoryFilterState, StorageLocation } from '../../types';
+import { InventoryFilterState } from '../../types';
 
 import { InventoryFilterBar } from './InventoryFilterBar';
+
+import { Category, StorageLocation } from '@/shared/types';
 
 const categories: Category[] = [
   { id: 'c1', name: '野菜' },

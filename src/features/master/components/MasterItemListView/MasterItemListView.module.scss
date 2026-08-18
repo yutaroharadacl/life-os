@@ -1,37 +1,35 @@
-.flash {
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
   width: 100%;
   max-width: 960px;
-  /* InventoryTable の container と左右の余白を揃える */
-  margin: 16px auto 0;
-  padding: 12px 16px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.flash {
   color: var(--foreground);
   font-size: 0.875rem;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 8px;
+  padding: 12px 16px;
 }
 
-.actions {
+.header {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 12px;
 }
 
-.masterLink {
-  min-height: 44px;
-  padding: 0 16px;
-  display: inline-flex;
-  align-items: center;
-  color: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  background-color: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  white-space: nowrap;
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
-.register {
+.add {
+  margin-left: auto;
   min-height: 44px;
   padding: 0 16px;
   color: var(--color-accent-foreground);

@@ -29,6 +29,18 @@
 
 ## ログ
 
+### 2026-08-07 / マスタ管理機能（カテゴリ・保管場所）
+
+設計書: [docs/design/master-management.md](design/master-management.md)
+
+今回は提案なし。`design-impl-reviewer` の判定は✅適合で、実装・設計書とも是正点なし。
+
+`code-reviewer` からは重要度「低」の指摘（`src/features/master/api/createMasterItem.ts` と
+`src/features/inventory/api/createInventory.ts` の `createId` 採番ロジックがほぼ重複している）が
+1件あったが、`master` feature を新設した目的自体が「feature ごとに閉じたロジックを持たせ、
+2 feature 以上が使うものだけを `shared` に切り出す」ことだったため、意図的に共通化しない判断とした
+（対応不要と判断・実装は変更していない）。
+
 ### 2026-08-07 / 在庫編集・削除機能
 
 設計書: [docs/design/inventory-edit-delete.md](design/inventory-edit-delete.md)

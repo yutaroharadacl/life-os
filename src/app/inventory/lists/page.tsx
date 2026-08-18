@@ -1,7 +1,7 @@
-import { getCategories } from '@/features/inventory/api/getCategories';
 import { getInventories } from '@/features/inventory/api/getInventories';
-import { getStorageLocations } from '@/features/inventory/api/getStorageLocations';
 import { InventoryListsView } from '@/features/inventory/components/InventoryListsView';
+import { getCategories } from '@/shared/api/getCategories';
+import { getStorageLocations } from '@/shared/api/getStorageLocations';
 
 /**
  * 「残り日数」はアクセス時点の日付で計算する必要があるため、静的プリレンダリングを無効にする。

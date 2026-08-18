@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useInventoryFilterStore } from '../../stores/useInventoryFilterStore';
-import { Category, Inventory, InventoryFilterState, StorageLocation } from '../../types';
+import { Inventory, InventoryFilterState } from '../../types';
 
 import { InventoryListsView } from './InventoryListsView';
+
+import { Category, StorageLocation } from '@/shared/types';
 
 // テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
 const createInventory = (overrides: Partial<Inventory> = {}): Inventory => ({
@@ -68,6 +70,20 @@ describe('InventoryListsView', () => {
       );
 
       expect(screen.getByText('白菜')).toBeInTheDocument();
+    });
+
+    it('マスタ管理へのリンクが表示され/masterを指す', () => {
+      render(
+        <InventoryListsView
+          initialInventories={[]}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      const link = screen.getByRole('link', { name: 'マスタ管理' });
+      expect(link).toBeInTheDocument();
+      expect(link).toHaveAttribute('href', '/master');
     });
 
     it('在庫を登録ボタンが表示されている', () => {

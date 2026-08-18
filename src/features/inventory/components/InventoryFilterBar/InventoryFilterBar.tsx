@@ -1,9 +1,11 @@
 'use client';
 
 import { useInventoryFilterStore } from '../../stores/useInventoryFilterStore';
-import { Category, SortOrder, StorageLocation } from '../../types';
+import { SortOrder } from '../../types';
 
 import styles from './InventoryFilterBar.module.scss';
+
+import { Category, StorageLocation } from '@/shared/types';
 
 /** カテゴリ・保管場所フィルタの「すべて」を表す値 */
 const ALL_VALUE = '';

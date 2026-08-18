@@ -3,18 +3,18 @@
 import { useActionState, useId, useRef, useState } from 'react';
 
 import {
-  Category,
   InventoryDraft,
   InventoryFormErrors,
   InventoryFormMode,
   InventoryFormValues,
-  StorageLocation,
 } from '../../types';
 import { formatIsoDate } from '../../utils/isoDate';
 import { toInventoryDraft } from '../../utils/toInventoryDraft';
 import { validateInventoryForm } from '../../utils/validateInventoryForm';
 
 import styles from './InventoryForm.module.scss';
+
+import { Category, StorageLocation } from '@/shared/types';
 
 /** 未選択を表す `<select>` の値 */
 const UNSELECTED = '';
