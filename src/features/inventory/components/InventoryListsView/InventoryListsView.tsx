@@ -35,6 +35,8 @@ type Props = {
    * ここで既定値に頼るとサーバーとブラウザのタイムゾーン差で表示が食い違う。
    */
   today?: Date;
+  /** 「期限間近」警告のしきい値（日）。通知設定の値。省略時はInventoryTableの既定値（3）に従う */
+  warningThresholdDays?: number;
 };
 
 /**
@@ -47,6 +49,7 @@ export const InventoryListsView = ({
   categories = [],
   storageLocations = [],
   today,
+  warningThresholdDays,
 }: Props) => {
   const [inventories, setInventories] = useState(initialInventories);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -130,10 +133,14 @@ export const InventoryListsView = ({
         emptyMessage={emptyMessage}
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
+        warningThresholdDays={warningThresholdDays}
         action={
           <div className={styles.actions}>
-            <Link href="/master" className={styles.masterLink}>
+            <Link href="/master" className={styles.navLink}>
               マスタ管理
+            </Link>
+            <Link href="/notifications" className={styles.navLink}>
+              通知設定
             </Link>
             <button type="button" className={styles.register} onClick={handleOpenCreate}>
               在庫を登録
