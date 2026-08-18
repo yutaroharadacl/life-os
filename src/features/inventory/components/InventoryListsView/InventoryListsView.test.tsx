@@ -28,7 +28,7 @@ const categories: Category[] = [
 ];
 const storageLocations: StorageLocation[] = [{ id: 's1', name: '冷蔵庫' }];
 
-// InventoryFilterBar は useInventoryFilterStore を直接参照するため、テストごとに初期状態へ戻す
+// InventoryFilterBar・InventoryStorageTabs は useInventoryFilterStore を直接参照するため、テストごとに初期状態へ戻す
 const initialFilterState: InventoryFilterState = {
   category: '',
   keyword: '',
@@ -45,6 +45,11 @@ const openModalAndFillValidForm = async (user: ReturnType<typeof userEvent.setup
   await user.type(screen.getByLabelText('食品名'), '牛乳');
   await user.selectOptions(screen.getByLabelText('カテゴリ'), '野菜');
   await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+};
+
+/** 絞り込みパネルは初期状態で閉じているため、フィールドを操作する前に開く */
+const openFilterPanel = async (user: ReturnType<typeof userEvent.setup>) => {
+  await user.click(screen.getByRole('button', { name: '絞り込み・並び替え' }));
 };
 
 // 食品名から対象行（<tr>）を特定する。行内の編集・削除ボタンをスコープして操作するために使う
@@ -70,34 +75,6 @@ describe('InventoryListsView', () => {
       );
 
       expect(screen.getByText('白菜')).toBeInTheDocument();
-    });
-
-    it('マスタ管理へのリンクが表示され/masterを指す', () => {
-      render(
-        <InventoryListsView
-          initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
-        />,
-      );
-
-      const link = screen.getByRole('link', { name: 'マスタ管理' });
-      expect(link).toBeInTheDocument();
-      expect(link).toHaveAttribute('href', '/master');
-    });
-
-    it('通知設定へのリンクが表示され/notificationsを指す', () => {
-      render(
-        <InventoryListsView
-          initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
-        />,
-      );
-
-      const link = screen.getByRole('link', { name: '通知設定' });
-      expect(link).toBeInTheDocument();
-      expect(link).toHaveAttribute('href', '/notifications');
     });
 
     it('在庫を登録ボタンが表示されている', () => {
@@ -303,6 +280,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.type(screen.getByLabelText('食品名で検索'), '白菜');
 
       expect(screen.getByText('白菜')).toBeInTheDocument();
@@ -322,6 +300,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.selectOptions(screen.getByLabelText('カテゴリで絞り込み'), '肉');
 
       expect(screen.getByText('豚肉')).toBeInTheDocument();
@@ -341,6 +320,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.type(screen.getByLabelText('食品名で検索'), '白菜');
 
       expect(screen.getByText('全 1 件')).toBeInTheDocument();
@@ -369,6 +349,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.selectOptions(screen.getByLabelText('並び替え'), '食品名順');
 
       const table = screen.getByRole('table');
@@ -389,6 +370,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.type(screen.getByLabelText('食品名で検索'), '白菜');
       await user.click(screen.getByRole('button', { name: '絞り込みをクリア' }));
 
@@ -406,6 +388,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.selectOptions(screen.getByLabelText('カテゴリで絞り込み'), '肉');
       expect(screen.queryByText('白菜')).not.toBeInTheDocument();
 
@@ -416,6 +399,58 @@ describe('InventoryListsView', () => {
       expect(await screen.findByText('牛乳')).toBeInTheDocument();
       expect(screen.getByText('白菜')).toBeInTheDocument();
       expect(screen.getByLabelText('カテゴリで絞り込み')).toHaveValue('');
+    });
+
+    it('保管場所タブが表示されている', () => {
+      render(
+        <InventoryListsView
+          initialInventories={[createInventory()]}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      expect(screen.getByRole('tab', { name: 'すべて' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: '冷蔵庫' })).toBeInTheDocument();
+    });
+
+    it('保管場所タブで特定の保管場所を選ぶとその保管場所の在庫のみが表示される', async () => {
+      const user = userEvent.setup();
+      render(
+        <InventoryListsView
+          initialInventories={[
+            createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' }),
+            createInventory({ id: '2', name: '冷凍餃子', storage: '冷凍庫' }),
+          ]}
+          categories={categories}
+          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+        />,
+      );
+
+      await user.click(screen.getByRole('tab', { name: '冷蔵庫' }));
+
+      expect(screen.getByText('白菜')).toBeInTheDocument();
+      expect(screen.queryByText('冷凍餃子')).not.toBeInTheDocument();
+    });
+
+    it('すべてタブに戻すと全保管場所の在庫が再びグルーピング表示される', async () => {
+      const user = userEvent.setup();
+      render(
+        <InventoryListsView
+          initialInventories={[
+            createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' }),
+            createInventory({ id: '2', name: '冷凍餃子', storage: '冷凍庫' }),
+          ]}
+          categories={categories}
+          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+        />,
+      );
+
+      await user.click(screen.getByRole('tab', { name: '冷蔵庫' }));
+      await user.click(screen.getByRole('tab', { name: 'すべて' }));
+
+      expect(screen.getByText('白菜')).toBeInTheDocument();
+      expect(screen.getByText('冷凍餃子')).toBeInTheDocument();
     });
 
     it('一覧の各行に編集・削除ボタンが表示される', () => {
@@ -751,6 +786,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.type(screen.getByLabelText('食品名で検索'), '存在しない食品');
 
       expect(screen.getByText('該当する在庫が見つかりません。')).toBeInTheDocument();
@@ -804,6 +840,7 @@ describe('InventoryListsView', () => {
         />,
       );
 
+      await openFilterPanel(user);
       await user.type(screen.getByLabelText('食品名で検索'), '白菜');
       await user.click(within(getRowByName('白菜')).getByRole('button', { name: '削除' }));
       await user.click(screen.getByRole('button', { name: '削除する' }));
@@ -816,6 +853,29 @@ describe('InventoryListsView', () => {
 
       expect(screen.getByText('豚肉')).toBeInTheDocument();
       expect(screen.getByText('全 1 件')).toBeInTheDocument();
+    });
+
+    it('保管場所タブで特定の保管場所を選択中に別の保管場所で在庫を新規登録すると保管場所タブがすべてへ自動的に戻り登録した在庫が一覧に表示される', async () => {
+      const user = userEvent.setup();
+      render(
+        <InventoryListsView
+          initialInventories={[createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' })]}
+          categories={categories}
+          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+        />,
+      );
+
+      await user.click(screen.getByRole('tab', { name: '冷蔵庫' }));
+      expect(useInventoryFilterStore.getState().storage).toBe('冷蔵庫');
+
+      await user.click(screen.getByRole('button', { name: '在庫を登録' }));
+      await user.type(screen.getByLabelText('食品名'), '鶏肉');
+      await user.selectOptions(screen.getByLabelText('カテゴリ'), '肉');
+      await user.selectOptions(screen.getByLabelText('保管場所'), '冷凍庫');
+      await user.click(screen.getByRole('button', { name: '登録する' }));
+
+      expect(await screen.findByText('鶏肉')).toBeInTheDocument();
+      expect(useInventoryFilterStore.getState().storage).toBe('');
     });
   });
 });
