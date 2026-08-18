@@ -9,6 +9,31 @@
   padding: 0 16px;
 }
 
+/* 枠線のみのボタンの共通スタイル（.toggle / .clear で共有） */
+%outline-button {
+  min-height: 44px;
+  padding: 0 16px;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.toggle {
+  @extend %outline-button;
+  align-self: flex-start;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -35,21 +60,12 @@
 }
 
 .clear {
-  min-height: 44px;
-  padding: 0 16px;
-  color: inherit;
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  background-color: transparent;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  cursor: pointer;
+  @extend %outline-button;
 }
 
 /* タブレット以上では横並びにし、はみ出す分だけ折り返す */
 @media (min-width: 600px) {
-  .container {
+  .panel {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-end;

@@ -1,0 +1,1 @@
+export { InventoryStorageTabs } from './InventoryStorageTabs';

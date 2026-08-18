@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 
 import { createInventory } from '../../api/createInventory';
@@ -12,6 +11,7 @@ import { filterInventories } from '../../utils/filterInventories';
 import { toInventoryFormValues } from '../../utils/toInventoryFormValues';
 import { InventoryFilterBar } from '../InventoryFilterBar';
 import { InventoryFormModal } from '../InventoryFormModal';
+import { InventoryStorageTabs } from '../InventoryStorageTabs';
 import { InventoryTable } from '../InventoryTable';
 
 import styles from './InventoryListsView.module.scss';
@@ -124,7 +124,9 @@ export const InventoryListsView = ({
         </p>
       )}
 
-      <InventoryFilterBar categories={categories} storageLocations={storageLocations} />
+      <InventoryStorageTabs storageLocations={storageLocations} />
+
+      <InventoryFilterBar categories={categories} />
 
       <InventoryTable
         inventories={visibleInventories}
@@ -135,17 +137,9 @@ export const InventoryListsView = ({
         onDelete={handleDelete}
         warningThresholdDays={warningThresholdDays}
         action={
-          <div className={styles.actions}>
-            <Link href="/master" className={styles.navLink}>
-              マスタ管理
-            </Link>
-            <Link href="/notifications" className={styles.navLink}>
-              通知設定
-            </Link>
-            <button type="button" className={styles.register} onClick={handleOpenCreate}>
-              在庫を登録
-            </button>
-          </div>
+          <button type="button" className={styles.register} onClick={handleOpenCreate}>
+            在庫を登録
+          </button>
         }
       />
 
