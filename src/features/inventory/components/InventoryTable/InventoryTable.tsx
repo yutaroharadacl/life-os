@@ -42,6 +42,8 @@ type Props = {
   onEdit?: (inventory: Inventory) => void;
   /** 削除確認で「削除する」を押したときに、対象の在庫とともに呼ぶ。省略時は何もしない */
   onDelete?: (inventory: Inventory) => void;
+  /** 「期限間近」警告のしきい値（日）。通知設定の値。省略時は3（現行の固定値と同じ） */
+  warningThresholdDays?: number;
 };
 
 export const InventoryTable = ({
@@ -52,6 +54,7 @@ export const InventoryTable = ({
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
   onEdit = () => {},
   onDelete = () => {},
+  warningThresholdDays,
 }: Props) => {
   const groups = groupByStorage(inventories);
 
@@ -94,7 +97,7 @@ export const InventoryTable = ({
 
                   <tbody>
                     {sortInventories(group.inventories, sortOrder).map((inventory) => {
-                      const expiration = getExpirationInfo(inventory, today);
+                      const expiration = getExpirationInfo(inventory, today, warningThresholdDays);
 
                       return (
                         <tr key={inventory.id}>

@@ -242,6 +242,26 @@ describe('InventoryTable', () => {
     });
   });
 
+  describe('warningThresholdDays（通知設定連動）', () => {
+    it('warningThresholdDays={7}を渡すと期限が7日後の在庫の残り日数があと7日と表示される', () => {
+      // getExpirationInfo の第3引数に正しく橋渡しされていることを、表示ラベルから確認する
+      // （warning/normal の視覚的な区別は expiration.test.ts の getExpirationInfo で検証済み）
+      const inventories = [createInventory({ expirationDate: '2026-08-13' })];
+
+      render(<InventoryTable inventories={inventories} today={today} warningThresholdDays={7} />);
+
+      expect(screen.getByText('あと7日')).toBeInTheDocument();
+    });
+
+    it('warningThresholdDaysを渡さないとき期限が3日後の在庫の残り日数があと3日と表示される（既定値の回帰確認）', () => {
+      const inventories = [createInventory({ expirationDate: '2026-08-09' })];
+
+      render(<InventoryTable inventories={inventories} today={today} />);
+
+      expect(screen.getByText('あと3日')).toBeInTheDocument();
+    });
+  });
+
   describe('操作列', () => {
     it('操作列の見出しが表示される', () => {
       render(

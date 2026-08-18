@@ -1,6 +1,7 @@
 import { getInventories } from '@/features/inventory/api/getInventories';
 import { InventoryListsView } from '@/features/inventory/components/InventoryListsView';
 import { getCategories } from '@/shared/api/getCategories';
+import { getNotificationSettings } from '@/shared/api/getNotificationSettings';
 import { getStorageLocations } from '@/shared/api/getStorageLocations';
 
 /**
@@ -13,6 +14,7 @@ export default function InventoryLists() {
   const inventories = getInventories();
   const categories = getCategories();
   const storageLocations = getStorageLocations();
+  const { warningThresholdDays } = getNotificationSettings();
 
   /**
    * 「残り日数」の基準日はここで1度だけ求めて渡す。
@@ -28,6 +30,7 @@ export default function InventoryLists() {
       categories={categories}
       storageLocations={storageLocations}
       today={today}
+      warningThresholdDays={warningThresholdDays}
     />
   );
 }

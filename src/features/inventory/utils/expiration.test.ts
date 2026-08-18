@@ -135,4 +135,47 @@ describe('getExpirationInfo', () => {
       expect(result).toEqual({ status: 'warning', label: '本日まで' });
     });
   });
+
+  describe('warningThresholdDays（通知設定連動）', () => {
+    it('第3引数にwarningThresholdDays=7を渡すと期限が7日後の在庫はwarningになる', () => {
+      // 既定の3日なら normal になるはずの日数で確認する
+      const inventory = createInventory({ expirationDate: '2026-08-13' });
+
+      const result = getExpirationInfo(inventory, today, 7);
+
+      expect(result).toEqual({ status: 'warning', label: 'あと7日' });
+    });
+
+    it('第3引数を省略すると、これまでどおり3日以内がwarningになる（回帰確認）', () => {
+      const inventory = createInventory({ expirationDate: '2026-08-09' });
+
+      const result = getExpirationInfo(inventory, today);
+
+      expect(result).toEqual({ status: 'warning', label: 'あと3日' });
+    });
+
+    it('warningThresholdDays=7のとき期限がちょうど7日後はwarningになる（境界値）', () => {
+      const inventory = createInventory({ expirationDate: '2026-08-13' });
+
+      const result = getExpirationInfo(inventory, today, 7);
+
+      expect(result.status).toBe('warning');
+    });
+
+    it('warningThresholdDays=7のとき期限が8日後（しきい値+1日）はnormalになる（境界値）', () => {
+      const inventory = createInventory({ expirationDate: '2026-08-14' });
+
+      const result = getExpirationInfo(inventory, today, 7);
+
+      expect(result).toEqual({ status: 'normal', label: 'あと8日' });
+    });
+
+    it('expired判定はwarningThresholdDaysの値に関わらず変化しない（境界値）', () => {
+      const inventory = createInventory({ expirationDate: '2026-08-03' });
+
+      const result = getExpirationInfo(inventory, today, 7);
+
+      expect(result).toEqual({ status: 'expired', label: '3日超過' });
+    });
+  });
 });

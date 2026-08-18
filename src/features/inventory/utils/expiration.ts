@@ -3,10 +3,10 @@ import { ExpirationInfo, Inventory } from '../types';
 import { parseIsoDate, toDayValue } from './isoDate';
 
 /**
- * 期限が近いと警告表示するしきい値（日数）。
- * 通知設定画面（要件 5-6）の実装時にユーザー設定値へ差し替える暫定値。
+ * `warningThresholdDays` 省略時の既定値（日数）。
+ * 通知設定（要件 5-6）で変更していない場合の初期しきい値と同じ。
  */
-const WARNING_THRESHOLD_DAYS = 3;
+const DEFAULT_WARNING_THRESHOLD_DAYS = 3;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -38,10 +38,12 @@ const diffInDays = (from: number, to: number): number => Math.round((to - from) 
  * 期限が設定されていれば期限までの日数、未設定なら購入日からの経過日数を返す。
  * @param inventory - 対象の在庫
  * @param today - 基準日。省略時は当日
+ * @param warningThresholdDays - 「期限間近」として警告表示する残り日数のしきい値（通知設定の値）。省略時は3日
  */
 export const getExpirationInfo = (
   inventory: Inventory,
   today: Date = new Date(),
+  warningThresholdDays: number = DEFAULT_WARNING_THRESHOLD_DAYS,
 ): ExpirationInfo => {
   const baseDay = toComparableDayFromDate(today);
 
@@ -76,7 +78,7 @@ export const getExpirationInfo = (
     return { status: 'warning', label: '本日まで' };
   }
 
-  if (remainingDays <= WARNING_THRESHOLD_DAYS) {
+  if (remainingDays <= warningThresholdDays) {
     return { status: 'warning', label: `あと${remainingDays}日` };
   }
 

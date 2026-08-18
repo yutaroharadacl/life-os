@@ -86,6 +86,20 @@ describe('InventoryListsView', () => {
       expect(link).toHaveAttribute('href', '/master');
     });
 
+    it('通知設定へのリンクが表示され/notificationsを指す', () => {
+      render(
+        <InventoryListsView
+          initialInventories={[]}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      const link = screen.getByRole('link', { name: '通知設定' });
+      expect(link).toBeInTheDocument();
+      expect(link).toHaveAttribute('href', '/notifications');
+    });
+
     it('在庫を登録ボタンが表示されている', () => {
       render(
         <InventoryListsView

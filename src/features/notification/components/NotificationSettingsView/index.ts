@@ -1,0 +1,1 @@
+export { NotificationSettingsView } from './NotificationSettingsView';

@@ -16,3 +16,13 @@ export type Category = MasterItem;
 
 /** 保管場所マスタ。DOM の組み込み型 `Storage` と衝突するため `StorageLocation` とする */
 export type StorageLocation = MasterItem;
+
+/**
+ * 通知設定。今回は通知タイミングの1項目のみ。
+ * inventory feature（警告表示のしきい値として）・notification feature（設定画面の対象データとして）
+ * の両方から参照されるため shared に置く。
+ */
+export type NotificationSettings = {
+  /** 期限の何日前から「期限間近」として警告・通知するか */
+  warningThresholdDays: number;
+};
