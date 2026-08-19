@@ -7,6 +7,7 @@
       "Bash(pnpm test)",
       "Bash(pnpm test:*)",
       "Bash(pnpm build)",
+      "Bash(pnpm check:design)",
       "Bash(npx tsc --noEmit)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
