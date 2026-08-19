@@ -1,168 +1,93 @@
 # CLAUDE.md
 
-このファイルは Claude Code がこのリポジトリで作業する際の指針です。
-
-## プロジェクト概要
-
-家庭用食料品在庫管理システム。食材の在庫・期限を登録／確認し、期限が近づいたら通知することで、
-食材の廃棄と重複購入を防ぐことを目的とした個人開発プロジェクトです。
+家庭用食料品在庫管理システム（個人開発）。食材の在庫・期限を登録／確認し、
+期限が近づいたら通知することで、廃棄と重複購入を防ぐ。
 
 **要件の唯一の情報源**: [docs/要件定義書\_食料品在庫管理システム.md](docs/要件定義書_食料品在庫管理システム.md)
-機能の判断に迷ったら必ずこのファイルの該当章を読むこと。推測で仕様を決めない。
+仕様の判断に迷ったら必ず該当章を読む。推測で仕様を決めない。
 
 ## 技術スタック
 
-### 稼働中
+Next.js 16.2（App Router / React Compiler）/ React 19 / TypeScript `strict` /
+SCSS Modules / Vitest + Testing Library（jsdom）/ **pnpm 固定**（`npm`・`yarn` は使わない）。
 
-- **Next.js 16.2**（App Router / React Compiler 有効）
-- **React 19** / **TypeScript**（`strict: true`）
-- **SCSS Modules**（`*.module.scss`）
-- **pnpm**（パッケージマネージャは pnpm 固定。`npm` / `yarn` は使わない）
-- **Vitest + Testing Library**（jsdom）
-
-### 導入済みだが未使用
-
-- **TanStack Query** … サーバー状態（API から取得するデータ）を扱う
-- **Zustand** … クライアント状態（UI の一時状態、フィルタ条件など）を扱う
-
-この使い分けを守ること。サーバー状態を Zustand に持たせない。
-
-### 未着手（重要）
-
-- **Go バックエンド**と **PostgreSQL** は**まだ1行も存在しない**（`go.mod` も `*.go` もない）。
-  要件定義書「9. 制約条件」に書かれた将来の予定にすぎない。
-- したがってフロントエンドは当面**モック／ダミーデータ**で進める。
-  存在しない API エンドポイントを前提にしたコードを書かないこと。
+- TanStack Query = **サーバー状態**、Zustand = **クライアント状態**。導入済みだが未使用。この使い分けを崩さない
+- **Go バックエンドと PostgreSQL は別リポジトリ**（`../backend`）。当リポジトリの API は当面すべてモック。
+  存在しないエンドポイントを前提にしたコードを書かない
 
 ## アーキテクチャ
 
-Bulletproof React 準拠のフィーチャースライス構成。
-**規約ではなく `eslint.config.mjs` の `boundaries/element-types` が実際に強制している**ため、違反すると lint がエラーになる。
+Bulletproof React 準拠のフィーチャースライス。
+`src/app`（ルーティングのみ・薄く保つ）/ `src/features/<feature>/{components,types,utils,api,stores}` /
+`src/shared`（機能横断の共通物）。
 
-```
-src/
-├── app/       … ルーティングのみ。薄く保つ（画面の中身は feature に置く）
-├── features/  … 機能単位のスライス <feature>/{components,types,utils,api,stores}
-└── shared/    … 機能横断で使う共通物（未作成。必要になったら作る）
-```
+依存の向きは **`app` → `feature` → `shared` の一方通行**で、
+`eslint.config.mjs` の `boundaries/element-types` が実際に強制している（違反すると lint エラー）。
 
-**依存の向き**
-
-| from      | 許可される import 先 |
-| --------- | -------------------- |
-| `app`     | `feature`, `shared`  |
-| `feature` | `shared` のみ        |
-| `shared`  | `shared` のみ        |
-
-- **feature 同士の相互 import は禁止**。共有したくなったら `shared` に切り出す。
-- `src/api/` と `src/components/` は空ディレクトリで、上記の境界定義に存在しない。
-  新規ファイルをここに置かないこと。共通物は `src/shared/` に集約する。
+- **feature 同士の相互 import は禁止**。共有したくなったら `shared` に切り出す
+- `src/api/` と `src/components/` は境界定義に存在しない空ディレクトリ。ここにファイルを置かない
 
 ## コマンド
 
 ```bash
-pnpm dev             # 開発サーバー
-pnpm build           # 本番ビルド
-pnpm lint            # ESLint
-pnpm typecheck       # tsc --noEmit
-pnpm test            # Vitest（1回実行）
-pnpm test:watch      # Vitest（ウォッチ）
-pnpm test:coverage   # カバレッジ付き
+pnpm dev / build / lint / typecheck / test / test:watch / test:coverage
+pnpm check:design    # 設計書ヘッダのステータス更新漏れを検査
 ```
 
-実装を終えたら **`pnpm lint` → `pnpm typecheck` → `pnpm test` の3つを必ず通す**こと。
+実装を終えたら **`pnpm lint` → `pnpm typecheck` → `pnpm test`** を必ず通す。
 
-さらに、**日時やリクエストに依存する値を扱うページを追加・変更したら `pnpm build` を実行**し、
-Route 一覧でそのルートが `○ (Static)` になっていないか確認する。
-App Router は動的 API を使わないページを静的化するため、`new Date()` の結果が
-ビルド時刻のまま HTML に焼き込まれる。意図せず静的化されている場合は
-`export const dynamic = 'force-dynamic'` などで明示的に制御すること。
-（lint / typecheck / test では検出できない。実例: `docs/ai-feedback.md` 2026-08-06 #1）
+`src/app/**` を追加・変更した場合、または日時・リクエストに依存する値を扱う場合は
+**`pnpm build`** も実行し、Route 一覧でそのルートが `○ (Static)` になっていないか確認する。
+静的化されると `new Date()` がビルド時刻のまま HTML に焼き込まれる。
+必要なら `export const dynamic = 'force-dynamic'` で明示的に制御する
+（lint / typecheck / test では検出できない）。
 
 ## コーディング規約
 
-詳細は [docs/coding-standards.md](docs/coding-standards.md) を参照。コードを書く前に必ず読むこと。
+**[docs/coding-standards.md](docs/coding-standards.md) が正。コードを書く前に必ず読む。**
 
-要点だけ再掲:
+特に忘れやすい点だけ再掲:
 
 - 1コンポーネント1ディレクトリ（`Xxx.tsx` + `Xxx.module.scss` + `index.ts`）、参照はバレル経由
 - 名前付き arrow function export + `type Props = {...}`（`interface` / `React.FC` は使わない）
 - デフォルトは Server Component。`'use client'` は必要な最小の葉コンポーネントだけ
-- 境界を跨ぐ import は `@/` エイリアス、フィーチャー内は相対パス
 - **シンボル名・ファイル名は英語、UI 文字列・コメント・JSDoc は日本語**
 
 ## AI駆動開発ワークフロー
 
-```
-要件定義書 ──/task-breakdown──▶ docs/tasks.md              [メイン / Opus]
-                                    │
-                                    ▼
-プロンプト ──/detail-design──▶ docs/design/<機能名>.md      [メイン / Opus]
-                                    │
-                            ★ユーザーの承認ゲート★
-                        （設計書をレビューしてもらう。
-                          承認を得るまで実装に進まない）
-                                    │
-                                    ▼
-              /implement-from-design（TDDサイクル）
-                 ├─ ① RED      : unit-test-writer で先に失敗するテストを書く  [サブ / Sonnet]
-                 ├─ ② GREEN    : テストを通す実装                            [メイン]
-                 ├─ ③ REFACTOR : 規約に沿って整理（テストは緑のまま）          [メイン]
-                 └─ ④ 検証     : lint / typecheck / test（＋ページ変更時は build）
-                                    │
-                                    ▼
-                 ⑤ 自動レビュー（検証通過後、確認なしで並列起動）
-                 ├─ design-impl-reviewer   [サブ / Sonnet]（設計 vs 実装の突合）
-                 └─ code-reviewer          [サブ / Sonnet]（バグ・セキュリティ・簡潔性）
-                                    │
-                        ┌───────────┴───────────┐
-                        ▼                       ▼
-                重要度「高」あり           高評価の指摘なし
-              ここで停止しユーザーに                │
-                方針確認（後続へ進まない）              │
-                                                    ▼
-                                          docs/ai-feedback.md
-                                    （design-impl-reviewer の改善提案を反映するループ）
-                                                    │
-                                                    ▼
-                                          ──/create-pr──▶ PR   [メイン]
-```
+| 工程         | 実行                    | 担当     | 成果物                    |
+| ------------ | ----------------------- | -------- | ------------------------- |
+| タスク分割   | `/task-breakdown`       | メイン   | `docs/tasks.md`           |
+| 詳細設計     | `/detail-design`        | メイン   | `docs/design/<機能名>.md` |
+| 実装（TDD）  | `/implement-from-design`| メイン   | 実装＋テスト              |
+| PR 作成      | `/create-pr`            | メイン   | PR                        |
 
-| 種別         | 名前                    | 用途                                 |
-| ------------ | ----------------------- | ------------------------------------ |
-| スキル       | `task-breakdown`        | 要件定義書 → 実装タスクへ分割        |
-| スキル       | `detail-design`         | プロンプト → 詳細設計書              |
-| スキル       | `implement-from-design` | 詳細設計書 → 実装（TDD）             |
-| スキル       | `create-pr`             | コミットメッセージと PR の作成       |
-| エージェント | `unit-test-writer`      | 単体テストの作成                     |
-| エージェント | `design-impl-reviewer`  | 設計と実装の突合レビュー             |
-| エージェント | `code-reviewer`         | バグ・セキュリティ・簡潔性の汎用レビュー |
+サブエージェント: `unit-test-writer`（RED フェーズのテスト生成）/
+`design-impl-reviewer`（設計 vs 実装の突合）/ `code-reviewer`（バグ・セキュリティ・簡潔性）。
 
-実装完了後の2つのレビューエージェントは `implement-from-design` の検証（lint/typecheck/test）が
-通った時点で**自動的に並列起動**される（ユーザーの指示待ちではない）。
-どちらかが重要度「高」の指摘を出した場合のみ、そこで一旦停止してユーザーに確認する。
+### 3つの停止ゲート（省略しない）
+
+1. **設計書の承認** — `detail-design` の後。未決事項が無くても必ずユーザーのレビューを挟む
+2. **自動レビュー** — `implement-from-design` の検証通過後、2つのレビューエージェントを
+   指示待ちせず並列起動する。重要度「高」の指摘が1件でもあれば停止して方針を確認する
+3. **PR 作成前** — 重要度「高」の指摘が未対応のまま `/create-pr` に進まない
 
 ### モデル配分の原則
 
-トークンを無駄にしないため、工程によって担当を分ける。
-
-- **メインセッション（Opus）**: 要件の解釈、設計、レビュー結果の取りまとめと反映判断
-- **サブエージェント（Sonnet / Haiku）**: 機械的で作業量の多い工程（テスト生成、差分と設計書の突合、汎用コードレビュー）
-
-サブエージェントを新規に作る場合も `model` は `sonnet` か `haiku` を指定する。
+- **メイン（Opus）**: 要件の解釈、設計、レビュー結果の取りまとめと反映判断
+- **サブ（Sonnet / Haiku）**: 機械的で作業量の多い工程。新規サブエージェントも `sonnet` か `haiku` を指定する
 
 ### 改善フィードバックループ
 
-`design-impl-reviewer` は必ず「ワークフロー改善提案」を出力する。
-メインセッションはそれを [docs/ai-feedback.md](docs/ai-feedback.md) に日付付きで追記すること。
-提案が溜まったら、ユーザーの承認を得たうえで CLAUDE.md・`docs/coding-standards.md`・各スキルへ反映する。
+`design-impl-reviewer` が出す「ワークフロー改善提案」は、指摘の有無に関わらず
+[docs/ai-feedback.md](docs/ai-feedback.md) へ日付付きで追記する。
+提案の反映（CLAUDE.md・規約・スキル・エージェントの改訂）は**ユーザーの承認を得てから**行う。
 
 ## やってはいけないこと
 
-- **テストを書かずに実装を始める**（テストファースト必須。ユーザーが明示的にスキップを指示した場合のみ例外）
-- `any` を使う（ESLint エラー）
-- `console.log` を使う（`console.warn` / `console.error` のみ可）
-- **詳細設計書の承認を得ずに実装に入る**（未決事項が無くても、設計書のレビュー機会を必ず設ける）
+- **テストを書かずに実装を始める**（ユーザーが明示的にスキップを指示した場合のみ例外）
+- **詳細設計書の承認を得ずに実装に入る**
+- `any` を使う / `console.log` を使う（`console.warn`・`console.error` のみ可）— いずれも ESLint エラー
 - 指示なしに `git commit` / `git push` する
 - `docs/要件定義書_*.md` を勝手に書き換える（変更が必要ならユーザーに確認する）
 - 設計書に書かれていないファイルを勝手に増やす（必要なら設計書を先に更新する）

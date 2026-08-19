@@ -1,0 +1,6 @@
+# 設計書ヘッダの「ステータス」欄の更新漏れを検査する。
+# スキル（implement-from-design / create-pr）を経由せず push した場合の最後の砦。
+#
+# 設計書のみで実装が未着手のブランチを push したい場合は次で回避できる:
+#   git push --no-verify
+pnpm check:design
