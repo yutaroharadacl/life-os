@@ -17,6 +17,7 @@ import { InventoryTable } from '../InventoryTable';
 
 import styles from './InventoryListsView.module.scss';
 
+import { createMasterItem } from '@/shared/api/createMasterItem';
 import { Category, StorageLocation } from '@/shared/types';
 
 /** 絞り込み条件に一致する在庫が1件もないときのメッセージ（未登録の0件とは区別する） */
@@ -28,10 +29,10 @@ const DEFAULT_ERROR_MESSAGE = '通信に失敗しました';
 type Props = {
   /** 初期表示する在庫（Server Component から受け取る） */
   initialInventories?: Inventory[];
-  /** 選択肢に出すカテゴリマスタ */
-  categories?: Category[];
-  /** 選択肢に出す保管場所マスタ */
-  storageLocations?: StorageLocation[];
+  /** 選択肢に出すカテゴリマスタの初期値（Server Component から受け取る） */
+  initialCategories?: Category[];
+  /** 選択肢に出す保管場所マスタの初期値（Server Component から受け取る） */
+  initialStorageLocations?: StorageLocation[];
   /**
    * 期限日数の基準日。省略時は当日。
    * このコンポーネントはクライアント境界にあり SSR とハイドレーションの2回描画されるため、
@@ -50,12 +51,16 @@ type Props = {
  */
 export const InventoryListsView = ({
   initialInventories = [],
-  categories = [],
-  storageLocations = [],
+  initialCategories = [],
+  initialStorageLocations = [],
   today,
   warningThresholdDays,
 }: Props) => {
   const [inventories, setInventories] = useState(initialInventories);
+  // 在庫登録モーダルで新規登録したカテゴリ・保管場所を、フィルタ・タブ・次のモーダルの
+  // 選択肢へリロードなしで反映するため、props からそのまま使わず state に昇格する
+  const [categories, setCategories] = useState(initialCategories);
+  const [storageLocations, setStorageLocations] = useState(initialStorageLocations);
   const [isModalOpen, setIsModalOpen] = useState(false);
   // null は登録モード、値があれば編集モード（対象在庫）を表す
   const [editingTarget, setEditingTarget] = useState<Inventory | null>(null);
@@ -68,6 +73,12 @@ export const InventoryListsView = ({
       updateInventory(id, draft),
   });
   const deleteMutation = useMutation({ mutationFn: deleteInventory });
+  const createCategoryMutation = useMutation({
+    mutationFn: (name: string) => createMasterItem('category', { name }),
+  });
+  const createStorageLocationMutation = useMutation({
+    mutationFn: (name: string) => createMasterItem('storage', { name }),
+  });
 
   const keyword = useInventoryFilterStore((state) => state.keyword);
   const category = useInventoryFilterStore((state) => state.category);
@@ -109,6 +120,21 @@ export const InventoryListsView = ({
       // 通信失敗時はモーダルを開いたままにし、利用者が入力し直して再送信できるようにする
       setErrorMessage(error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE);
     }
+  };
+
+  // 在庫登録モーダルの「＋ 新規登録」から呼ばれる。作成した項目をローカルの選択肢へ即座に反映する。
+  // 失敗時（mutateAsync が reject）は categories を更新せずそのまま例外を伝播させ、
+  // InventoryForm 側でエラー表示させる
+  const handleCreateCategory = async (name: string): Promise<Category> => {
+    const created = await createCategoryMutation.mutateAsync(name);
+    setCategories((previous) => [...previous, created]);
+    return created;
+  };
+
+  const handleCreateStorageLocation = async (name: string): Promise<StorageLocation> => {
+    const created = await createStorageLocationMutation.mutateAsync(name);
+    setStorageLocations((previous) => [...previous, created]);
+    return created;
   };
 
   const handleOpenCreate = () => {
@@ -185,6 +211,9 @@ export const InventoryListsView = ({
         mode={editingTarget ? 'edit' : 'create'}
         initialValues={editingTarget ? toInventoryFormValues(editingTarget) : undefined}
         onSubmit={handleSubmit}
+        // 「＋ 新規登録」は在庫の新規登録モーダルのみに適用し、編集モードでは表示しない
+        onCreateCategory={editingTarget ? undefined : handleCreateCategory}
+        onCreateStorageLocation={editingTarget ? undefined : handleCreateStorageLocation}
       />
     </>
   );

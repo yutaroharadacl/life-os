@@ -3,7 +3,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { createMasterItem } from '../../api/createMasterItem';
 import { deleteMasterItem } from '../../api/deleteMasterItem';
 import { updateMasterItem } from '../../api/updateMasterItem';
 import { MasterItemFormModal } from '../MasterItemFormModal';
@@ -11,6 +10,7 @@ import { MasterItemList } from '../MasterItemList';
 
 import styles from './MasterItemListView.module.scss';
 
+import { createMasterItem } from '@/shared/api/createMasterItem';
 import { MasterItem, MasterItemDraft, MasterResource } from '@/shared/types';
 
 /** 通信失敗時に表示する既定のエラーメッセージ（Error でない例外が投げられた場合のフォールバック） */

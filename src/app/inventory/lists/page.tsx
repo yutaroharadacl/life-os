@@ -29,8 +29,8 @@ export default async function InventoryLists() {
   return (
     <InventoryListsView
       initialInventories={inventories}
-      categories={categories}
-      storageLocations={storageLocations}
+      initialCategories={categories}
+      initialStorageLocations={storageLocations}
       today={today}
       warningThresholdDays={warningThresholdDays}
     />

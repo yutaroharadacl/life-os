@@ -17,6 +17,8 @@ const createFormValues = (overrides: Partial<InventoryFormValues> = {}): Invento
   expirationDate: '2026-08-20',
   memo: '',
   name: '白菜',
+  newCategoryName: '',
+  newStorageName: '',
   purchaseDate: '2026-08-03',
   quantity: '2',
   storage: '冷蔵庫',
@@ -303,6 +305,40 @@ describe('InventoryFormModal', () => {
 
       await vi.waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: '白菜' }));
+      });
+    });
+  });
+
+  describe('新規登録（カテゴリ・保管場所の＋新規登録）', () => {
+    describe('正常系', () => {
+      it('onCreateCategory・onCreateStorageLocationを渡すとInventoryFormにそのまま渡り＋新規登録の選択肢が表示される', () => {
+        render(
+          <InventoryFormModal
+            open
+            onClose={vi.fn()}
+            onSubmit={vi.fn()}
+            categories={categories}
+            storageLocations={storageLocations}
+            onCreateCategory={vi.fn()}
+            onCreateStorageLocation={vi.fn()}
+          />,
+        );
+
+        expect(screen.getAllByRole('option', { name: '＋ 新規登録' })).toHaveLength(2);
+      });
+
+      it('onCreateCategory・onCreateStorageLocationを渡さないときInventoryForm側に＋新規登録の選択肢が表示されない（回帰確認）', () => {
+        render(
+          <InventoryFormModal
+            open
+            onClose={vi.fn()}
+            onSubmit={vi.fn()}
+            categories={categories}
+            storageLocations={storageLocations}
+          />,
+        );
+
+        expect(screen.queryByRole('option', { name: '＋ 新規登録' })).not.toBeInTheDocument();
       });
     });
   });

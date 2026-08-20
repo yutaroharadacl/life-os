@@ -22,7 +22,7 @@ const { mockCreateMasterItem, mockUpdateMasterItem, mockDeleteMasterItem } = vi.
   mockDeleteMasterItem: vi.fn(),
 }));
 
-vi.mock('../../api/createMasterItem', () => ({ createMasterItem: mockCreateMasterItem }));
+vi.mock('@/shared/api/createMasterItem', () => ({ createMasterItem: mockCreateMasterItem }));
 vi.mock('../../api/updateMasterItem', () => ({ updateMasterItem: mockUpdateMasterItem }));
 vi.mock('../../api/deleteMasterItem', () => ({ deleteMasterItem: mockDeleteMasterItem }));
 

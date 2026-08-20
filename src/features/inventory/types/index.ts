@@ -25,7 +25,11 @@ export type InventoryDraft = Omit<Inventory, 'id'>;
 export type InventoryFormValues = {
   name: string;
   category: string;
+  /** カテゴリで「＋ 新規登録」を選んだときに入力する新しいカテゴリ名。それ以外は空文字 */
+  newCategoryName: string;
   storage: string;
+  /** 保管場所で「＋ 新規登録」を選んだときに入力する新しい保管場所名。それ以外は空文字 */
+  newStorageName: string;
   quantity: string;
   expirationDate: string;
   purchaseDate: string;

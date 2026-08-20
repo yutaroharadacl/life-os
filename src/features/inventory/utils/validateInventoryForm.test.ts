@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { InventoryFormValues } from '../types';
 
-import { validateInventoryForm } from './validateInventoryForm';
+import { NEW_MASTER_ITEM_VALUE, validateInventoryForm } from './validateInventoryForm';
 
 // テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
 const createFormValues = (overrides: Partial<InventoryFormValues> = {}): InventoryFormValues => ({
@@ -10,6 +10,8 @@ const createFormValues = (overrides: Partial<InventoryFormValues> = {}): Invento
   expirationDate: '',
   memo: '',
   name: '白菜',
+  newCategoryName: '',
+  newStorageName: '',
   purchaseDate: '2026-08-06',
   quantity: '1',
   storage: '冷蔵庫',
@@ -171,6 +173,124 @@ describe('validateInventoryForm', () => {
 
       expect(validateInventoryForm(values)).toEqual({
         memo: 'メモは200文字以内で入力してください',
+      });
+    });
+  });
+
+  describe('新規登録（カテゴリ・保管場所の＋新規登録）', () => {
+    describe('正常系', () => {
+      it('categoryが通常の選択値のときnewCategoryNameが空文字でもエラーにならない', () => {
+        const values = createFormValues({ category: '野菜', newCategoryName: '' });
+
+        expect(validateInventoryForm(values, ['野菜'], ['冷蔵庫'])).toEqual({});
+      });
+
+      it('categoryがNEW_MASTER_ITEM_VALUEで既存と重複しない有効な名称のときcategory・newCategoryNameのいずれもエラーにならない', () => {
+        const values = createFormValues({
+          category: NEW_MASTER_ITEM_VALUE,
+          newCategoryName: '発酵食品',
+        });
+
+        expect(validateInventoryForm(values, ['野菜'], ['冷蔵庫'])).toEqual({});
+      });
+
+      it('storageがNEW_MASTER_ITEM_VALUEで既存と重複しない有効な名称のときエラーにならない', () => {
+        const values = createFormValues({
+          storage: NEW_MASTER_ITEM_VALUE,
+          newStorageName: 'サブ冷蔵庫',
+        });
+
+        expect(validateInventoryForm(values, ['野菜'], ['冷蔵庫'])).toEqual({});
+      });
+
+      it('categoryとstorageの両方がNEW_MASTER_ITEM_VALUEでそれぞれ有効な名称のとき両方ともエラーにならない', () => {
+        const values = createFormValues({
+          category: NEW_MASTER_ITEM_VALUE,
+          newCategoryName: '発酵食品',
+          storage: NEW_MASTER_ITEM_VALUE,
+          newStorageName: 'サブ冷蔵庫',
+        });
+
+        expect(validateInventoryForm(values, ['野菜'], ['冷蔵庫'])).toEqual({});
+      });
+    });
+
+    describe('異常系', () => {
+      it('categoryがNEW_MASTER_ITEM_VALUEでnewCategoryNameが空文字のときカテゴリ名を入力してくださいを返す', () => {
+        const values = createFormValues({ category: NEW_MASTER_ITEM_VALUE, newCategoryName: '' });
+
+        expect(validateInventoryForm(values, [], [])).toEqual({
+          newCategoryName: 'カテゴリ名を入力してください',
+        });
+      });
+
+      it('categoryがNEW_MASTER_ITEM_VALUEでnewCategoryNameがexistingCategoryNamesに含まれるとき同じ名前のカテゴリが既に登録されていますを返す', () => {
+        const values = createFormValues({
+          category: NEW_MASTER_ITEM_VALUE,
+          newCategoryName: '野菜',
+        });
+
+        expect(validateInventoryForm(values, ['野菜'], [])).toEqual({
+          newCategoryName: '同じ名前のカテゴリが既に登録されています',
+        });
+      });
+
+      it('storageがNEW_MASTER_ITEM_VALUEでnewStorageNameが空文字のとき保管場所名を入力してくださいを返す', () => {
+        const values = createFormValues({ storage: NEW_MASTER_ITEM_VALUE, newStorageName: '' });
+
+        expect(validateInventoryForm(values, [], [])).toEqual({
+          newStorageName: '保管場所名を入力してください',
+        });
+      });
+
+      it('storageがNEW_MASTER_ITEM_VALUEでnewStorageNameが既存保管場所名と重複するとき同じ名前の保管場所が既に登録されていますを返す', () => {
+        const values = createFormValues({
+          storage: NEW_MASTER_ITEM_VALUE,
+          newStorageName: '冷蔵庫',
+        });
+
+        expect(validateInventoryForm(values, [], ['冷蔵庫'])).toEqual({
+          newStorageName: '同じ名前の保管場所が既に登録されています',
+        });
+      });
+    });
+
+    describe('境界値', () => {
+      it('newCategoryNameが20文字のときエラーにならない', () => {
+        const values = createFormValues({
+          category: NEW_MASTER_ITEM_VALUE,
+          newCategoryName: 'あ'.repeat(20),
+        });
+
+        expect(validateInventoryForm(values, [], [])).toEqual({});
+      });
+
+      it('newCategoryNameが21文字のときカテゴリ名は20文字以内で入力してくださいを返す', () => {
+        const values = createFormValues({
+          category: NEW_MASTER_ITEM_VALUE,
+          newCategoryName: 'あ'.repeat(21),
+        });
+
+        expect(validateInventoryForm(values, [], [])).toEqual({
+          newCategoryName: 'カテゴリ名は20文字以内で入力してください',
+        });
+      });
+
+      it('categoryがNEW_MASTER_ITEM_VALUEではない通常の値のときnewCategoryNameが21文字でもエラーにならない（新規登録が選ばれていないフィールドは検証しない）', () => {
+        const values = createFormValues({ category: '野菜', newCategoryName: 'あ'.repeat(21) });
+
+        expect(validateInventoryForm(values, [], [])).toEqual({});
+      });
+
+      it('existingCategoryNames・existingStorageNamesを省略したとき（既定値[]）新規登録時の重複チェックは常に通る', () => {
+        const values = createFormValues({
+          category: NEW_MASTER_ITEM_VALUE,
+          newCategoryName: '発酵食品',
+          storage: NEW_MASTER_ITEM_VALUE,
+          newStorageName: 'サブ冷蔵庫',
+        });
+
+        expect(validateInventoryForm(values)).toEqual({});
       });
     });
   });

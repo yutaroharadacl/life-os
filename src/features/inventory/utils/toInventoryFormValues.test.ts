@@ -80,5 +80,21 @@ describe('toInventoryFormValues', () => {
 
       expect(result.memo).toBe('');
     });
+
+    it('newCategoryNameが空文字で初期化される（編集時は常に空欄から始まる）', () => {
+      const inventory = createInventory();
+
+      const result = toInventoryFormValues(inventory);
+
+      expect(result.newCategoryName).toBe('');
+    });
+
+    it('newStorageNameが空文字で初期化される（編集時は常に空欄から始まる）', () => {
+      const inventory = createInventory();
+
+      const result = toInventoryFormValues(inventory);
+
+      expect(result.newStorageName).toBe('');
+    });
   });
 });

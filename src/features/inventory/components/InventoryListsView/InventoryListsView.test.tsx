@@ -19,15 +19,19 @@ const render = (ui: ReactElement) => {
 
 // createInventory・updateInventory・deleteInventory は BFF（fetch）を叩く非同期関数のため、
 // 正常系はテストごとの状態変化のみに関心があるモック実装で代替し、異常系は個別に reject させる
-const { mockCreateInventory, mockUpdateInventory, mockDeleteInventory } = vi.hoisted(() => ({
-  mockCreateInventory: vi.fn(),
-  mockUpdateInventory: vi.fn(),
-  mockDeleteInventory: vi.fn(),
-}));
+const { mockCreateInventory, mockUpdateInventory, mockDeleteInventory, mockCreateMasterItem } =
+  vi.hoisted(() => ({
+    mockCreateInventory: vi.fn(),
+    mockUpdateInventory: vi.fn(),
+    mockDeleteInventory: vi.fn(),
+    mockCreateMasterItem: vi.fn(),
+  }));
 
 vi.mock('../../api/createInventory', () => ({ createInventory: mockCreateInventory }));
 vi.mock('../../api/updateInventory', () => ({ updateInventory: mockUpdateInventory }));
 vi.mock('../../api/deleteInventory', () => ({ deleteInventory: mockDeleteInventory }));
+// カテゴリ・保管場所の新規登録（＋ 新規登録）は shared/api/createMasterItem を直接呼ぶため、こちらもモックする
+vi.mock('@/shared/api/createMasterItem', () => ({ createMasterItem: mockCreateMasterItem }));
 
 // テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
 const createInventory = (overrides: Partial<Inventory> = {}): Inventory => ({
@@ -73,6 +77,7 @@ beforeEach(() => {
     .mockReset()
     .mockImplementation((id: string, draft: InventoryDraft) => Promise.resolve({ ...draft, id }));
   mockDeleteInventory.mockReset().mockResolvedValue(undefined);
+  mockCreateMasterItem.mockReset();
 });
 
 const openModalAndFillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -104,8 +109,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -116,8 +121,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -129,8 +134,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -144,8 +149,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -161,8 +166,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -180,8 +185,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -196,8 +201,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -214,8 +219,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' })]}
-          categories={categories}
-          storageLocations={[...storageLocations, { id: 's2', name: 'パントリー' }]}
+          initialCategories={categories}
+          initialStorageLocations={[...storageLocations, { id: 's2', name: 'パントリー' }]}
         />,
       );
 
@@ -240,8 +245,8 @@ describe('InventoryListsView', () => {
               expirationDate: '2026-12-01',
             }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -264,8 +269,8 @@ describe('InventoryListsView', () => {
         <InventoryListsView
           initialInventories={[createInventory({ expirationDate: '2026-08-16' })]}
           today={new Date(2026, 7, 6)}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -277,8 +282,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ id: '1' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -294,8 +299,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory()]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -310,8 +315,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜' }),
             createInventory({ id: '2', name: '豚肉' }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -330,8 +335,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜', category: '野菜' }),
             createInventory({ id: '2', name: '豚肉', category: '肉' }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -350,8 +355,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜' }),
             createInventory({ id: '2', name: '豚肉' }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -379,8 +384,8 @@ describe('InventoryListsView', () => {
               expirationDate: '2026-08-20',
             }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -400,8 +405,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜' }),
             createInventory({ id: '2', name: '豚肉' }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -418,8 +423,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ id: '1', name: '白菜', category: '野菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -440,8 +445,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory()]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -457,8 +462,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' }),
             createInventory({ id: '2', name: '冷凍餃子', storage: '冷凍庫' }),
           ]}
-          categories={categories}
-          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+          initialCategories={categories}
+          initialStorageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
         />,
       );
 
@@ -476,8 +481,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' }),
             createInventory({ id: '2', name: '冷凍餃子', storage: '冷凍庫' }),
           ]}
-          categories={categories}
-          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+          initialCategories={categories}
+          initialStorageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
         />,
       );
 
@@ -492,8 +497,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -507,8 +512,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -533,8 +538,8 @@ describe('InventoryListsView', () => {
               memo: '半分使用済み',
             }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -554,8 +559,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜', quantity: 1 })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -577,8 +582,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' }),
             createInventory({ id: '2', name: '牛乳', storage: '冷蔵庫' }),
           ]}
-          categories={categories}
-          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+          initialCategories={categories}
+          initialStorageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
         />,
       );
 
@@ -600,8 +605,8 @@ describe('InventoryListsView', () => {
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜', expirationDate: null })]}
           today={new Date(2026, 7, 6)}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -617,8 +622,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -634,8 +639,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -655,8 +660,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜' }),
             createInventory({ id: '2', name: '豚肉' }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -675,8 +680,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -691,8 +696,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -711,8 +716,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ id: '1' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -728,8 +733,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -747,8 +752,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜', quantity: 3 })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -765,8 +770,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜', quantity: 3 })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -784,8 +789,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -801,7 +806,12 @@ describe('InventoryListsView', () => {
   describe('境界値', () => {
     it('initialInventoriesを省略したとき空状態が表示され1件登録すると全1件になる', async () => {
       const user = userEvent.setup();
-      render(<InventoryListsView categories={categories} storageLocations={storageLocations} />);
+      render(
+        <InventoryListsView
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
+        />,
+      );
 
       expect(screen.getByText('登録されている在庫はありません。')).toBeInTheDocument();
 
@@ -816,8 +826,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -833,8 +843,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -849,8 +859,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜', storage: '冷蔵庫' })]}
-          categories={categories}
-          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+          initialCategories={categories}
+          initialStorageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
         />,
       );
 
@@ -870,8 +880,8 @@ describe('InventoryListsView', () => {
             createInventory({ id: '1', name: '白菜' }),
             createInventory({ id: '2', name: '豚肉' }),
           ]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -895,8 +905,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ id: '1', name: '白菜', storage: '冷蔵庫' })]}
-          categories={categories}
-          storageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
+          initialCategories={categories}
+          initialStorageLocations={[...storageLocations, { id: 's2', name: '冷凍庫' }]}
         />,
       );
 
@@ -921,8 +931,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ id: '1', name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -941,8 +951,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜', quantity: 1 })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -962,8 +972,8 @@ describe('InventoryListsView', () => {
       render(
         <InventoryListsView
           initialInventories={[createInventory({ name: '白菜' })]}
-          categories={categories}
-          storageLocations={storageLocations}
+          initialCategories={categories}
+          initialStorageLocations={storageLocations}
         />,
       );
 
@@ -973,6 +983,113 @@ describe('InventoryListsView', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent('通信に失敗しました');
       expect(screen.getByText('白菜')).toBeInTheDocument();
       expect(screen.getByText('全 1 件')).toBeInTheDocument();
+    });
+  });
+
+  describe('新規登録（カテゴリ・保管場所の＋新規登録）', () => {
+    describe('正常系', () => {
+      it('在庫を登録から開いたモーダル（登録モード）でカテゴリ・保管場所に＋新規登録の選択肢が表示される', async () => {
+        const user = userEvent.setup();
+        render(
+          <InventoryListsView
+            initialInventories={[]}
+            initialCategories={categories}
+            initialStorageLocations={storageLocations}
+          />,
+        );
+
+        await user.click(screen.getByRole('button', { name: '在庫を登録' }));
+
+        expect(screen.getAllByRole('option', { name: '＋ 新規登録' })).toHaveLength(2);
+      });
+
+      it('カテゴリを新規登録して在庫を登録すると一覧に新しい在庫が反映され、その後に開いた別の登録モーダルのカテゴリ選択肢に新規登録したカテゴリ名が追加されている', async () => {
+        const user = userEvent.setup();
+        mockCreateMasterItem.mockResolvedValueOnce({ id: 'new-c', name: '発酵食品' });
+        render(
+          <InventoryListsView
+            initialInventories={[]}
+            initialCategories={categories}
+            initialStorageLocations={storageLocations}
+          />,
+        );
+
+        await user.click(screen.getByRole('button', { name: '在庫を登録' }));
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '発酵食品');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        expect(await screen.findByText('納豆')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: '在庫を登録' }));
+
+        expect(screen.getByRole('option', { name: '発酵食品' })).toBeInTheDocument();
+      });
+
+      it('保管場所を新規登録して在庫を登録するとInventoryStorageTabsに新しい保管場所のタブがリロードなしで追加される', async () => {
+        const user = userEvent.setup();
+        mockCreateMasterItem.mockResolvedValueOnce({ id: 'new-s', name: 'パントリー' });
+        render(
+          <InventoryListsView
+            initialInventories={[]}
+            initialCategories={categories}
+            initialStorageLocations={storageLocations}
+          />,
+        );
+
+        await user.click(screen.getByRole('button', { name: '在庫を登録' }));
+        await user.type(screen.getByLabelText('食品名'), '缶詰');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '野菜');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しい保管場所名'), 'パントリー');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        expect(await screen.findByRole('tab', { name: 'パントリー' })).toBeInTheDocument();
+      });
+    });
+
+    describe('異常系', () => {
+      it('カテゴリの新規登録（createMasterItem相当）が失敗すると在庫は一覧に追加されずエラーメッセージが表示される', async () => {
+        const user = userEvent.setup();
+        mockCreateMasterItem.mockRejectedValueOnce(new Error('カテゴリの追加に失敗しました'));
+        render(
+          <InventoryListsView
+            initialInventories={[]}
+            initialCategories={categories}
+            initialStorageLocations={storageLocations}
+          />,
+        );
+
+        await user.click(screen.getByRole('button', { name: '在庫を登録' }));
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '発酵食品');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        expect(await screen.findByText('カテゴリの追加に失敗しました')).toBeInTheDocument();
+        expect(screen.queryByText('納豆')).not.toBeInTheDocument();
+        expect(mockCreateInventory).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('境界値', () => {
+      it('一覧の行の編集から開いたモーダル（編集モード）ではカテゴリ・保管場所に＋新規登録の選択肢が表示されない', async () => {
+        const user = userEvent.setup();
+        render(
+          <InventoryListsView
+            initialInventories={[createInventory({ name: '白菜' })]}
+            initialCategories={categories}
+            initialStorageLocations={storageLocations}
+          />,
+        );
+
+        await user.click(within(getRowByName('白菜')).getByRole('button', { name: '編集' }));
+
+        expect(screen.queryByRole('option', { name: '＋ 新規登録' })).not.toBeInTheDocument();
+      });
     });
   });
 });
