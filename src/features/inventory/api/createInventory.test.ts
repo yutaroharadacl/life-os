@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { InventoryDraft } from '../types';
+import { Inventory, InventoryDraft } from '../types';
 
 import { createInventory } from './createInventory';
 
@@ -22,48 +22,50 @@ describe('createInventory', () => {
   });
 
   describe('正常系', () => {
-    it('draftの各フィールドが戻り値にそのまま入る', () => {
-      const draft = createDraft({ name: '牛乳', quantity: 2 });
+    it('POST /api/inventoriesにJSON.stringify(draft)をボディとして送る', async () => {
+      const draft = createDraft({ name: '牛乳' });
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify({ ...draft, id: '1' }), { status: 201 }));
+      vi.stubGlobal('fetch', fetchMock);
 
-      const result = createInventory(draft);
+      await createInventory(draft);
 
-      expect(result).toMatchObject(draft);
+      expect(fetchMock).toHaveBeenCalledWith('/api/inventories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
     });
 
-    it('idが空でない文字列として採番される', () => {
-      const result = createInventory(createDraft());
+    it('レスポンスのJSONをそのまま返す', async () => {
+      const draft = createDraft();
+      const created: Inventory = { ...draft, id: '1' };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(new Response(JSON.stringify(created), { status: 201 })),
+      );
 
-      expect(typeof result.id).toBe('string');
-      expect(result.id.length).toBeGreaterThan(0);
-    });
+      const result = await createInventory(draft);
 
-    it('2回呼ぶと異なるidが採番される', () => {
-      const first = createInventory(createDraft());
-      const second = createInventory(createDraft());
-
-      expect(first.id).not.toBe(second.id);
+      expect(result).toEqual(created);
     });
   });
 
   describe('異常系', () => {
-    // crypto.randomUUID は secure context 限定。
-    // スマホから http://<LAN-IP>:3000 で開いた場合などは存在しない
-    it('crypto.randomUUIDが使えない環境でも例外を投げずにidを採番する', () => {
-      vi.stubGlobal('crypto', {});
+    it('fetchがエラーレスポンスを返すとき、fetchJsonが投げるErrorがそのまま伝播する', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(
+          new Response(JSON.stringify({ error: '数量は1以上999以下で入力してください' }), {
+            status: 400,
+          }),
+        ),
+      );
 
-      const result = createInventory(createDraft());
-
-      expect(typeof result.id).toBe('string');
-      expect(result.id.length).toBeGreaterThan(0);
-    });
-
-    it('crypto.randomUUIDが使えない環境でも2回呼ぶと異なるidになる', () => {
-      vi.stubGlobal('crypto', {});
-
-      const first = createInventory(createDraft());
-      const second = createInventory(createDraft());
-
-      expect(first.id).not.toBe(second.id);
+      await expect(createInventory(createDraft())).rejects.toThrow(
+        '数量は1以上999以下で入力してください',
+      );
     });
   });
 });

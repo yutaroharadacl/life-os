@@ -1,7 +1,13 @@
+import { RESOURCE_PATHS } from './resourcePath';
+
+import { fetchJson } from '@/shared/api/fetchJson';
+import { MasterResource } from '@/shared/types';
+
 /**
  * マスタ項目（カテゴリ・保管場所）を削除する。
- * Go バックエンド（DELETE /api/categories/:id, /api/storages/:id）が未実装のためモック。
- * 一覧からの除去は呼び出し側（MasterItemListView）の state 操作で行うため、ここでは何もしない。
- * @param _id - 削除対象の項目ID
+ * ブラウザから BFF（DELETE /api/categories/{id} または /api/storages/{id}）を叩く。
+ * @param resource - 削除対象の種別
+ * @param id - 削除対象の項目ID
  */
-export const deleteMasterItem = (_id: string): void => {};
+export const deleteMasterItem = (resource: MasterResource, id: string): Promise<void> =>
+  fetchJson<void>(`${RESOURCE_PATHS[resource]}/${id}`, { method: 'DELETE' });

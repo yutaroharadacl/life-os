@@ -83,12 +83,14 @@ export type InventoryFilterStore = InventoryFilterState & {
   resetFilters: () => void;
 };
 
-/** 在庫 API のレスポンス（将来の Go バックエンドとの契約） */
+/** 在庫 API のレスポンス（Go バックエンドの InventoryResponse と一致させる） */
 export type InventoryResponse = {
   id: string;
   name: string;
-  category: string;
-  storage: string;
+  category_id: string;
+  category_name: string;
+  storage_id: string;
+  storage_name: string;
   quantity: number;
   expiration_date: string | null;
   purchase_date: string;

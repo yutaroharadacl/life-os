@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { InventoryDraft } from '../types';
+import { Inventory, InventoryDraft } from '../types';
 
 import { updateInventory } from './updateInventory';
 
@@ -17,36 +17,57 @@ const createDraft = (overrides: Partial<InventoryDraft> = {}): InventoryDraft =>
 });
 
 describe('updateInventory', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   describe('正常系', () => {
-    it('draftの各フィールドが戻り値にそのまま入る', () => {
+    it('PATCH /api/inventories/{id}にJSON.stringify(draft)をボディとして送る', async () => {
       const draft = createDraft({ name: '牛乳', quantity: 2 });
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify({ ...draft, id: 'inventory-1' }), { status: 200 }),
+        );
+      vi.stubGlobal('fetch', fetchMock);
 
-      const result = updateInventory('1', draft);
+      await updateInventory('inventory-1', draft);
 
-      expect(result).toMatchObject(draft);
+      expect(fetchMock).toHaveBeenCalledWith('/api/inventories/inventory-1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      });
     });
 
-    it('指定したidが戻り値のidになる', () => {
-      const result = updateInventory('inventory-42', createDraft());
+    it('レスポンスのJSONをそのまま返す', async () => {
+      const draft = createDraft();
+      const updated: Inventory = { ...draft, id: 'inventory-1' };
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(new Response(JSON.stringify(updated), { status: 200 })),
+      );
 
-      expect(result.id).toBe('inventory-42');
-    });
+      const result = await updateInventory('inventory-1', draft);
 
-    it('数量・保管場所を変更したdraftを渡すと戻り値に変更後の値が反映される', () => {
-      const draft = createDraft({ quantity: 5, storage: '冷凍庫' });
-
-      const result = updateInventory('1', draft);
-
-      expect(result.quantity).toBe(5);
-      expect(result.storage).toBe('冷凍庫');
+      expect(result).toEqual(updated);
     });
   });
 
-  describe('境界値', () => {
-    it('idが空文字でも例外を投げずそのままidに入る', () => {
-      const result = updateInventory('', createDraft());
+  describe('異常系', () => {
+    it('fetchがエラーレスポンスを返すとき、fetchJsonが投げるErrorがそのまま伝播する', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(
+            new Response(JSON.stringify({ error: '在庫が見つかりません' }), { status: 404 }),
+          ),
+      );
 
-      expect(result.id).toBe('');
+      await expect(updateInventory('inventory-1', createDraft())).rejects.toThrow(
+        '在庫が見つかりません',
+      );
     });
   });
 });

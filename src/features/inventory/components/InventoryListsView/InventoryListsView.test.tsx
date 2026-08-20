@@ -1,13 +1,33 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render as rtlRender, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { ReactElement } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useInventoryFilterStore } from '../../stores/useInventoryFilterStore';
-import { Inventory, InventoryFilterState } from '../../types';
+import { Inventory, InventoryDraft, InventoryFilterState } from '../../types';
 
 import { InventoryListsView } from './InventoryListsView';
 
 import { Category, StorageLocation } from '@/shared/types';
+
+// useMutation は QueryClientProvider 配下でしか呼び出せないため、テストごとに新しい QueryClient で包む
+const render = (ui: ReactElement) => {
+  const queryClient = new QueryClient();
+  return rtlRender(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+};
+
+// createInventory・updateInventory・deleteInventory は BFF（fetch）を叩く非同期関数のため、
+// 正常系はテストごとの状態変化のみに関心があるモック実装で代替し、異常系は個別に reject させる
+const { mockCreateInventory, mockUpdateInventory, mockDeleteInventory } = vi.hoisted(() => ({
+  mockCreateInventory: vi.fn(),
+  mockUpdateInventory: vi.fn(),
+  mockDeleteInventory: vi.fn(),
+}));
+
+vi.mock('../../api/createInventory', () => ({ createInventory: mockCreateInventory }));
+vi.mock('../../api/updateInventory', () => ({ updateInventory: mockUpdateInventory }));
+vi.mock('../../api/deleteInventory', () => ({ deleteInventory: mockDeleteInventory }));
 
 // テストデータはファクトリ関数で用意し、意味のある値だけを overrides で明示する
 const createInventory = (overrides: Partial<Inventory> = {}): Inventory => ({
@@ -36,8 +56,23 @@ const initialFilterState: InventoryFilterState = {
   storage: '',
 };
 
+// 採番の連番。テストごとに作成された在庫の id が重複しないようにする
+let idSequence = 0;
+
 beforeEach(() => {
   useInventoryFilterStore.setState(initialFilterState);
+  idSequence = 0;
+
+  // 既定では旧モック実装と同じく「渡された draft をそのまま採番して返す」動作にしておき、
+  // 異常系のテストだけ個別に mockRejectedValue で上書きする
+  mockCreateInventory.mockReset().mockImplementation((draft: InventoryDraft) => {
+    idSequence += 1;
+    return Promise.resolve({ ...draft, id: `created-${idSequence}` });
+  });
+  mockUpdateInventory
+    .mockReset()
+    .mockImplementation((id: string, draft: InventoryDraft) => Promise.resolve({ ...draft, id }));
+  mockDeleteInventory.mockReset().mockResolvedValue(undefined);
 });
 
 const openModalAndFillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -876,6 +911,68 @@ describe('InventoryListsView', () => {
 
       expect(await screen.findByText('鶏肉')).toBeInTheDocument();
       expect(useInventoryFilterStore.getState().storage).toBe('');
+    });
+  });
+
+  describe('異常系（登録・更新・削除の通信失敗）', () => {
+    it('登録が失敗（createInventoryがreject）すると一覧は変化せずrole="alert"のエラーメッセージが表示されモーダルは開いたままになる', async () => {
+      const user = userEvent.setup();
+      mockCreateInventory.mockRejectedValue(new Error('通信に失敗しました'));
+      render(
+        <InventoryListsView
+          initialInventories={[createInventory({ id: '1', name: '白菜' })]}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      await openModalAndFillValidForm(user);
+      await user.click(screen.getByRole('button', { name: '登録する' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('通信に失敗しました');
+      expect(screen.getByText('全 1 件')).toBeInTheDocument();
+      expect(screen.queryByText('牛乳')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('食品名')).toBeInTheDocument();
+    });
+
+    it('更新が失敗（updateInventoryがreject）すると一覧は変化せずエラーメッセージが表示されモーダルは開いたままになる', async () => {
+      const user = userEvent.setup();
+      mockUpdateInventory.mockRejectedValue(new Error('通信に失敗しました'));
+      render(
+        <InventoryListsView
+          initialInventories={[createInventory({ name: '白菜', quantity: 1 })]}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      await user.click(within(getRowByName('白菜')).getByRole('button', { name: '編集' }));
+      await user.clear(screen.getByLabelText('数量'));
+      await user.type(screen.getByLabelText('数量'), '5');
+      await user.click(screen.getByRole('button', { name: '更新する' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('通信に失敗しました');
+      expect(within(getRowByName('白菜')).getByText('1')).toBeInTheDocument();
+      expect(screen.getByRole('dialog', { name: '在庫を編集' })).toBeInTheDocument();
+    });
+
+    it('削除が失敗（deleteInventoryがreject）すると一覧から対象の在庫は消えずエラーメッセージが表示される', async () => {
+      const user = userEvent.setup();
+      mockDeleteInventory.mockRejectedValue(new Error('通信に失敗しました'));
+      render(
+        <InventoryListsView
+          initialInventories={[createInventory({ name: '白菜' })]}
+          categories={categories}
+          storageLocations={storageLocations}
+        />,
+      );
+
+      await user.click(within(getRowByName('白菜')).getByRole('button', { name: '削除' }));
+      await user.click(screen.getByRole('button', { name: '削除する' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('通信に失敗しました');
+      expect(screen.getByText('白菜')).toBeInTheDocument();
+      expect(screen.getByText('全 1 件')).toBeInTheDocument();
     });
   });
 });

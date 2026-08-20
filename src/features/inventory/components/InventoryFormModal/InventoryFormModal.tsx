@@ -26,8 +26,8 @@ type Props = {
   mode?: InventoryFormMode;
   /** 編集対象の初期値。mode='edit' のときに渡す */
   initialValues?: InventoryFormValues;
-  /** 登録・更新が成立したときに呼ぶ */
-  onSubmit: (draft: InventoryDraft) => void;
+  /** 登録・更新が成立したときに呼ぶ。Promise を返すと解決するまで送信中の表示が続く */
+  onSubmit: (draft: InventoryDraft) => void | Promise<void>;
 };
 
 export const InventoryFormModal = ({
