@@ -10,10 +10,12 @@ import { getStorageLocations } from '@/shared/api/getStorageLocations';
  */
 export const dynamic = 'force-dynamic';
 
-export default function InventoryLists() {
-  const inventories = getInventories();
-  const categories = getCategories();
-  const storageLocations = getStorageLocations();
+export default async function InventoryLists() {
+  const [inventories, categories, storageLocations] = await Promise.all([
+    getInventories(),
+    getCategories(),
+    getStorageLocations(),
+  ]);
   const { warningThresholdDays } = getNotificationSettings();
 
   /**

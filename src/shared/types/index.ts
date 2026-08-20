@@ -11,6 +11,9 @@ export type MasterItem = {
 /** マスタ項目の新規追加時の入力値。ID はサーバー（モックでは採番関数）が振るため持たない */
 export type MasterItemDraft = Omit<MasterItem, 'id'>;
 
+/** マスタ項目の種別。BFF のどのエンドポイント（/api/categories・/api/storages）を使うかを決める */
+export type MasterResource = 'category' | 'storage';
+
 /** カテゴリマスタ */
 export type Category = MasterItem;
 

@@ -27,7 +27,7 @@ T-09 の通知配信もサーバー側からの送信が前提になるので、
 | T-05 | マスタ管理（カテゴリ・保管場所）を実装する   | 5-2, 5-3, 8-4 | -    | 完了   | [master-management.md](design/master-management.md)                           |
 | T-06 | 通知タイミング設定画面を実装する             | 5-6, 8-5      | -    | 完了   | [notification-settings.md](design/notification-settings.md)                   |
 | T-07 | 在庫一覧をスマホ向けに再構成する             | 7             | T-03 | 完了   | [inventory-list-mobile-navigation.md](design/inventory-list-mobile-navigation.md) |
-| T-08 | 在庫データを永続化する（API 接続）           | 6, 9          | -    | 未着手 | -                                                                            |
+| T-08 | 在庫データを永続化する（API 接続）           | 6, 9          | -    | 完了   | [backend-api-integration.md](design/backend-api-integration.md)             |
 | T-09 | 期限接近のプッシュ通知を配信する             | 5-6           | T-08 | 未着手 | -                                                                            |
 
 ## タスク詳細

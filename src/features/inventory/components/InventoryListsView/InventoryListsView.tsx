@@ -1,5 +1,6 @@
 'use client';
 
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { createInventory } from '../../api/createInventory';
@@ -21,8 +22,11 @@ import { Category, StorageLocation } from '@/shared/types';
 /** 絞り込み条件に一致する在庫が1件もないときのメッセージ（未登録の0件とは区別する） */
 const NO_MATCH_MESSAGE = '該当する在庫が見つかりません。';
 
+/** 通信失敗時に表示する既定のエラーメッセージ（Error でない例外が投げられた場合のフォールバック） */
+const DEFAULT_ERROR_MESSAGE = '通信に失敗しました';
+
 type Props = {
-  /** 初期表示する在庫（Server Component から受け取るモック） */
+  /** 初期表示する在庫（Server Component から受け取る） */
   initialInventories?: Inventory[];
   /** 選択肢に出すカテゴリマスタ */
   categories?: Category[];
@@ -42,7 +46,7 @@ type Props = {
 /**
  * 在庫一覧画面のクライアント側コンテナ。
  * 一覧と登録モーダルの共通の親として在庫リストを保持し、登録結果を即座に一覧へ反映する。
- * 永続化はしていないため、リロードすると登録内容は失われる（Go バックエンド未実装のため）。
+ * 登録・更新・削除は BFF（Route Handler）経由で Go バックエンドに永続化される。
  */
 export const InventoryListsView = ({
   initialInventories = [],
@@ -56,6 +60,14 @@ export const InventoryListsView = ({
   // null は登録モード、値があれば編集モード（対象在庫）を表す
   const [editingTarget, setEditingTarget] = useState<Inventory | null>(null);
   const [flashMessage, setFlashMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const createMutation = useMutation({ mutationFn: createInventory });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, draft }: { id: string; draft: InventoryDraft }) =>
+      updateInventory(id, draft),
+  });
+  const deleteMutation = useMutation({ mutationFn: deleteInventory });
 
   const keyword = useInventoryFilterStore((state) => state.keyword);
   const category = useInventoryFilterStore((state) => state.category);
@@ -67,39 +79,48 @@ export const InventoryListsView = ({
   // 未登録の0件（inventories が空）と、絞り込み結果の0件は表示を分ける
   const emptyMessage = inventories.length > 0 ? NO_MATCH_MESSAGE : undefined;
 
-  const handleSubmit = (draft: InventoryDraft) => {
-    if (editingTarget) {
-      const updated = updateInventory(editingTarget.id, draft);
+  const handleSubmit = async (draft: InventoryDraft) => {
+    setErrorMessage('');
 
-      setInventories((previous) =>
-        previous.map((inventory) => (inventory.id === updated.id ? updated : inventory)),
-      );
-      // 絞り込み条件が残っていると、編集後の内容が条件から外れて一覧から消えることがあるため、登録時と同様にクリアする
+    try {
+      if (editingTarget) {
+        const updated = await updateMutation.mutateAsync({ id: editingTarget.id, draft });
+
+        setInventories((previous) =>
+          previous.map((inventory) => (inventory.id === updated.id ? updated : inventory)),
+        );
+        // 絞り込み条件が残っていると、編集後の内容が条件から外れて一覧から消えることがあるため、登録時と同様にクリアする
+        resetFilters();
+        setIsModalOpen(false);
+        setEditingTarget(null);
+        setFlashMessage(`${updated.name}を更新しました`);
+        return;
+      }
+
+      const created = await createMutation.mutateAsync(draft);
+
+      // 表示位置は InventoryTable のグループ化と並び替えが決めるため、末尾に足すだけでよい
+      setInventories((previous) => [...previous, created]);
+      // 絞り込み条件が残っていると登録した在庫が一覧に映らないことがあるため、登録時にクリアする
       resetFilters();
       setIsModalOpen(false);
-      setEditingTarget(null);
-      setFlashMessage(`${updated.name}を更新しました`);
-      return;
+      setFlashMessage(`${created.name}を登録しました`);
+    } catch (error) {
+      // 通信失敗時はモーダルを開いたままにし、利用者が入力し直して再送信できるようにする
+      setErrorMessage(error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE);
     }
-
-    const created = createInventory(draft);
-
-    // 表示位置は InventoryTable のグループ化と並び替えが決めるため、末尾に足すだけでよい
-    setInventories((previous) => [...previous, created]);
-    // 絞り込み条件が残っていると登録した在庫が一覧に映らないことがあるため、登録時にクリアする
-    resetFilters();
-    setIsModalOpen(false);
-    setFlashMessage(`${created.name}を登録しました`);
   };
 
   const handleOpenCreate = () => {
     setFlashMessage('');
+    setErrorMessage('');
     setEditingTarget(null);
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (inventory: Inventory) => {
     setFlashMessage('');
+    setErrorMessage('');
     setEditingTarget(inventory);
     setIsModalOpen(true);
   };
@@ -110,10 +131,17 @@ export const InventoryListsView = ({
     setEditingTarget(null);
   };
 
-  const handleDelete = (inventory: Inventory) => {
-    deleteInventory(inventory.id);
-    setInventories((previous) => previous.filter((item) => item.id !== inventory.id));
-    setFlashMessage(`${inventory.name}を削除しました`);
+  const handleDelete = async (inventory: Inventory) => {
+    setErrorMessage('');
+
+    try {
+      await deleteMutation.mutateAsync(inventory.id);
+
+      setInventories((previous) => previous.filter((item) => item.id !== inventory.id));
+      setFlashMessage(`${inventory.name}を削除しました`);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE);
+    }
   };
 
   return (
@@ -121,6 +149,12 @@ export const InventoryListsView = ({
       {flashMessage && (
         <p className={styles.flash} role="status">
           {flashMessage}
+        </p>
+      )}
+
+      {errorMessage && (
+        <p className={styles.errorFlash} role="alert">
+          {errorMessage}
         </p>
       )}
 

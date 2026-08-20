@@ -22,8 +22,8 @@ type Props = {
   initialValue?: string;
   /** 重複チェック対象の既存名称。編集時は対象自身の名称を除いたもの */
   existingNames: string[];
-  /** 追加・更新が成立したときに呼ぶ */
-  onSubmit: (draft: MasterItemDraft) => void;
+  /** 追加・更新が成立したときに呼ぶ。Promise を返すと解決するまで送信中の表示が続く */
+  onSubmit: (draft: MasterItemDraft) => void | Promise<void>;
 };
 
 export const MasterItemFormModal = ({
