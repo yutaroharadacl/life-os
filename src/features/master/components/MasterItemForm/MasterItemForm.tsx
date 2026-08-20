@@ -3,11 +3,11 @@
 import { useActionState, useId, useState } from 'react';
 
 import { MasterItemFormMode } from '../../types';
-import { validateMasterItemForm } from '../../utils/validateMasterItemForm';
 
 import styles from './MasterItemForm.module.scss';
 
 import { MasterItemDraft } from '@/shared/types';
+import { validateMasterItemForm } from '@/shared/utils/validateMasterItemForm';
 
 /** mode ごとの送信ボタンのラベル */
 const SUBMIT_LABELS: Record<MasterItemFormMode, { idle: string; pending: string }> = {

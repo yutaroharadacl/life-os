@@ -10,6 +10,8 @@ const createFormValues = (overrides: Partial<InventoryFormValues> = {}): Invento
   expirationDate: '',
   memo: '',
   name: '白菜',
+  newCategoryName: '',
+  newStorageName: '',
   purchaseDate: '2026-08-06',
   quantity: '1',
   storage: '冷蔵庫',

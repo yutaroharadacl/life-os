@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -41,6 +41,8 @@ const createFormValues = (overrides: Partial<InventoryFormValues> = {}): Invento
   expirationDate: '2026-08-20',
   memo: '半分使用済み',
   name: '白菜',
+  newCategoryName: '',
+  newStorageName: '',
   purchaseDate: '2026-08-03',
   quantity: '2',
   storage: '冷蔵庫',
@@ -498,6 +500,385 @@ describe('InventoryForm', () => {
 
       expect(await screen.findByText('食品名を入力してください')).toBeInTheDocument();
       expect(onSubmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('新規登録（カテゴリ・保管場所の＋新規登録）', () => {
+    describe('正常系', () => {
+      it('onCreateCategoryを渡すとカテゴリのselectに＋新規登録のoptionが表示される', () => {
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={vi.fn()}
+            onCancel={vi.fn()}
+            onCreateCategory={vi.fn()}
+            today={today}
+          />,
+        );
+
+        const categorySelect = screen.getByLabelText('カテゴリ');
+        expect(
+          within(categorySelect).getByRole('option', { name: '＋ 新規登録' }),
+        ).toBeInTheDocument();
+      });
+
+      it('onCreateCategoryを渡さないと＋新規登録のoptionが表示されない', () => {
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={vi.fn()}
+            onCancel={vi.fn()}
+            today={today}
+          />,
+        );
+
+        const categorySelect = screen.getByLabelText('カテゴリ');
+        expect(
+          within(categorySelect).queryByRole('option', { name: '＋ 新規登録' }),
+        ).not.toBeInTheDocument();
+      });
+
+      it('カテゴリで＋新規登録を選ぶと新しいカテゴリ名の入力欄が表示される', async () => {
+        const user = userEvent.setup();
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={vi.fn()}
+            onCancel={vi.fn()}
+            onCreateCategory={vi.fn()}
+            today={today}
+          />,
+        );
+
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+
+        expect(screen.getByLabelText('新しいカテゴリ名')).toBeInTheDocument();
+      });
+
+      it('新しいカテゴリ名に入力して他の必須項目も入力し送信するとonCreateCategoryが入力した名称（trim済み）で呼ばれる', async () => {
+        const user = userEvent.setup();
+        const onCreateCategory = vi
+          .fn()
+          .mockResolvedValue({ id: 'new-c', name: '発酵食品' } satisfies Category);
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={vi.fn()}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '  発酵食品  ');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        await waitFor(() => {
+          expect(onCreateCategory).toHaveBeenCalledWith('発酵食品');
+        });
+      });
+
+      it('onCreateCategoryが作成したCategoryを返したときonSubmitがその名称を含むdraftで呼ばれnewCategoryNameは含まれない', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        const onCreateCategory = vi
+          .fn()
+          .mockResolvedValue({ id: 'new-c', name: '発酵食品' } satisfies Category);
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '発酵食品');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ category: '発酵食品' }));
+        });
+        const draft = onSubmit.mock.calls[0][0];
+        expect(draft).not.toHaveProperty('newCategoryName');
+      });
+
+      it('保管場所で＋新規登録を選び送信するとonCreateStorageLocationが呼ばれonSubmitのstorageに解決済み名称が入る', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        const onCreateStorageLocation = vi
+          .fn()
+          .mockResolvedValue({ id: 'new-s', name: 'パントリー' } satisfies StorageLocation);
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            onCreateStorageLocation={onCreateStorageLocation}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '缶詰');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '野菜');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しい保管場所名'), 'パントリー');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        await waitFor(() => {
+          expect(onCreateStorageLocation).toHaveBeenCalledWith('パントリー');
+        });
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ storage: 'パントリー' }));
+        });
+        const draft = onSubmit.mock.calls[0][0];
+        expect(draft).not.toHaveProperty('newStorageName');
+      });
+
+      it('カテゴリ・保管場所の両方で＋新規登録を選んで送信すると両方のコールバックが呼ばれonSubmitのdraftに両方の解決済み名称が入る', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        const onCreateCategory = vi
+          .fn()
+          .mockResolvedValue({ id: 'new-c', name: '発酵食品' } satisfies Category);
+        const onCreateStorageLocation = vi
+          .fn()
+          .mockResolvedValue({ id: 'new-s', name: 'パントリー' } satisfies StorageLocation);
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            onCreateStorageLocation={onCreateStorageLocation}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '発酵食品');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しい保管場所名'), 'パントリー');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        await waitFor(() => {
+          expect(onCreateCategory).toHaveBeenCalledWith('発酵食品');
+          expect(onCreateStorageLocation).toHaveBeenCalledWith('パントリー');
+        });
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({ category: '発酵食品', storage: 'パントリー' }),
+          );
+        });
+      });
+
+      it('＋新規登録から通常の選択肢に選び直すと新しいカテゴリ名入力欄が非表示になる', async () => {
+        const user = userEvent.setup();
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={vi.fn()}
+            onCancel={vi.fn()}
+            onCreateCategory={vi.fn()}
+            today={today}
+          />,
+        );
+
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        expect(screen.getByLabelText('新しいカテゴリ名')).toBeInTheDocument();
+
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '野菜');
+
+        expect(screen.queryByLabelText('新しいカテゴリ名')).not.toBeInTheDocument();
+      });
+    });
+
+    describe('異常系', () => {
+      it('カテゴリで＋新規登録を選び名称を空のまま送信するとカテゴリ名を入力してくださいが表示されonCreateCategory・onSubmitのどちらも呼ばれない', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        const onCreateCategory = vi.fn();
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        expect(await screen.findByText('カテゴリ名を入力してください')).toBeInTheDocument();
+        expect(onCreateCategory).not.toHaveBeenCalled();
+        expect(onSubmit).not.toHaveBeenCalled();
+      });
+
+      it('名称が既存カテゴリと重複した状態で送信すると同じ名前のカテゴリが既に登録されていますが表示されonCreateCategoryは呼ばれない', async () => {
+        const user = userEvent.setup();
+        const onCreateCategory = vi.fn();
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={vi.fn()}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '野菜');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        expect(
+          await screen.findByText('同じ名前のカテゴリが既に登録されています'),
+        ).toBeInTheDocument();
+        expect(onCreateCategory).not.toHaveBeenCalled();
+      });
+
+      it('onCreateCategoryがrejectするとそのメッセージが新しいカテゴリ名欄の下に表示されonSubmitは呼ばれない', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        const onCreateCategory = vi
+          .fn()
+          .mockRejectedValue(new Error('カテゴリの追加に失敗しました'));
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '発酵食品');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '冷蔵庫');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        expect(await screen.findByText('カテゴリの追加に失敗しました')).toBeInTheDocument();
+        expect(onSubmit).not.toHaveBeenCalled();
+      });
+
+      it('カテゴリの新規登録が成功し保管場所の新規登録が失敗したときonSubmitは呼ばれない', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        const onCreateCategory = vi
+          .fn()
+          .mockResolvedValue({ id: 'new-c', name: '発酵食品' } satisfies Category);
+        const onCreateStorageLocation = vi
+          .fn()
+          .mockRejectedValue(new Error('保管場所の追加に失敗しました'));
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            onCreateStorageLocation={onCreateStorageLocation}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '発酵食品');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しい保管場所名'), 'パントリー');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        expect(await screen.findByText('保管場所の追加に失敗しました')).toBeInTheDocument();
+        expect(onSubmit).not.toHaveBeenCalled();
+      });
+
+      it('カテゴリ作成成功後に保管場所作成が失敗し再送信してもonCreateCategoryは再呼び出しされない（冪等性）', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        const onCreateCategory = vi
+          .fn()
+          .mockResolvedValue({ id: 'new-c', name: '発酵食品' } satisfies Category);
+        const onCreateStorageLocation = vi
+          .fn()
+          .mockRejectedValueOnce(new Error('保管場所の追加に失敗しました'))
+          .mockResolvedValueOnce({ id: 'new-s', name: 'パントリー' } satisfies StorageLocation);
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={onSubmit}
+            onCancel={vi.fn()}
+            onCreateCategory={onCreateCategory}
+            onCreateStorageLocation={onCreateStorageLocation}
+            today={today}
+          />,
+        );
+
+        await user.type(screen.getByLabelText('食品名'), '納豆');
+        await user.selectOptions(screen.getByLabelText('カテゴリ'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しいカテゴリ名'), '発酵食品');
+        await user.selectOptions(screen.getByLabelText('保管場所'), '＋ 新規登録');
+        await user.type(screen.getByLabelText('新しい保管場所名'), 'パントリー');
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        await screen.findByText('保管場所の追加に失敗しました');
+        expect(onCreateCategory).toHaveBeenCalledTimes(1);
+
+        await user.click(screen.getByRole('button', { name: '登録する' }));
+
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({ category: '発酵食品', storage: 'パントリー' }),
+          );
+        });
+        expect(onCreateCategory).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('境界値', () => {
+      it('onCreateCategory・onCreateStorageLocationをどちらも渡さないとき既存の挙動から変化がない（回帰確認）', () => {
+        render(
+          <InventoryForm
+            categories={createCategories()}
+            storageLocations={createStorageLocations()}
+            onSubmit={vi.fn()}
+            onCancel={vi.fn()}
+            today={today}
+          />,
+        );
+
+        expect(screen.queryByRole('option', { name: '＋ 新規登録' })).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('新しいカテゴリ名')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('新しい保管場所名')).not.toBeInTheDocument();
+      });
     });
   });
 });

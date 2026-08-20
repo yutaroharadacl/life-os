@@ -9,7 +9,10 @@ import { Inventory, InventoryFormValues } from '../types';
 export const toInventoryFormValues = (inventory: Inventory): InventoryFormValues => ({
   name: inventory.name,
   category: inventory.category,
+  // 編集モードでは「＋ 新規登録」自体を表示しないため、新規名称欄は常に空欄から始まる
+  newCategoryName: '',
   storage: inventory.storage,
+  newStorageName: '',
   quantity: String(inventory.quantity),
   expirationDate: inventory.expirationDate ?? '',
   purchaseDate: inventory.purchaseDate,

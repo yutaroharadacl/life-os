@@ -2,6 +2,11 @@ import { InventoryFormErrors, InventoryFormValues } from '../types';
 
 import { parseIsoDate } from './isoDate';
 
+import { validateMasterItemForm } from '@/shared/utils/validateMasterItemForm';
+
+/** カテゴリ・保管場所の `<select>` で「＋ 新規登録」を表す値 */
+export const NEW_MASTER_ITEM_VALUE = '__new__';
+
 /** 食品名の最大文字数 */
 const NAME_MAX_LENGTH = 50;
 /** メモの最大文字数 */
@@ -78,13 +83,27 @@ const validateMemo = (memo: string): string | undefined =>
  * 最初のエラーで打ち切らず、全フィールドをまとめて検証する
  * （利用者が1つ直すたびに次のエラーが現れるのを避けるため）。
  * @param values - フォームの入力値
+ * @param existingCategoryNames - 重複チェック対象の既存カテゴリ名（category が新規登録のときのみ使う）
+ * @param existingStorageNames - 重複チェック対象の既存保管場所名（storage が新規登録のときのみ使う）
  * @returns フィールドごとのエラーメッセージ。エラーが無ければ空オブジェクト
  */
-export const validateInventoryForm = (values: InventoryFormValues): InventoryFormErrors => {
+export const validateInventoryForm = (
+  values: InventoryFormValues,
+  existingCategoryNames: string[] = [],
+  existingStorageNames: string[] = [],
+): InventoryFormErrors => {
   const candidates: InventoryFormErrors = {
     name: validateName(values.name),
     category: values.category === '' ? 'カテゴリを選択してください' : undefined,
+    newCategoryName:
+      values.category === NEW_MASTER_ITEM_VALUE
+        ? validateMasterItemForm(values.newCategoryName, 'カテゴリ', existingCategoryNames)
+        : undefined,
     storage: values.storage === '' ? '保管場所を選択してください' : undefined,
+    newStorageName:
+      values.storage === NEW_MASTER_ITEM_VALUE
+        ? validateMasterItemForm(values.newStorageName, '保管場所', existingStorageNames)
+        : undefined,
     quantity: validateQuantity(values.quantity),
     expirationDate: validateExpirationDate(values.expirationDate),
     purchaseDate: validatePurchaseDate(values.purchaseDate),

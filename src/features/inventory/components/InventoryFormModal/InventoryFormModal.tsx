@@ -28,6 +28,10 @@ type Props = {
   initialValues?: InventoryFormValues;
   /** 登録・更新が成立したときに呼ぶ。Promise を返すと解決するまで送信中の表示が続く */
   onSubmit: (draft: InventoryDraft) => void | Promise<void>;
+  /** InventoryForm へそのまま転送する（「＋ 新規登録」の選択肢の表示可否は InventoryForm 側が判断する） */
+  onCreateCategory?: (name: string) => Promise<Category>;
+  /** InventoryForm へそのまま転送する */
+  onCreateStorageLocation?: (name: string) => Promise<StorageLocation>;
 };
 
 export const InventoryFormModal = ({
@@ -38,6 +42,8 @@ export const InventoryFormModal = ({
   mode = 'create',
   initialValues,
   onSubmit,
+  onCreateCategory,
+  onCreateStorageLocation,
 }: Props) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -120,6 +126,8 @@ export const InventoryFormModal = ({
             initialValues={initialValues}
             onSubmit={onSubmit}
             onCancel={onClose}
+            onCreateCategory={onCreateCategory}
+            onCreateStorageLocation={onCreateStorageLocation}
           />
         </div>
       )}

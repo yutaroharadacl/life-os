@@ -1,6 +1,5 @@
-import { RESOURCE_PATHS } from './resourcePath';
-
 import { fetchJson } from '@/shared/api/fetchJson';
+import { RESOURCE_PATHS } from '@/shared/api/resourcePath';
 import { MasterResource } from '@/shared/types';
 
 /**
