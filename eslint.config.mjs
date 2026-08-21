@@ -64,29 +64,38 @@ const eslintConfig = defineConfig([
       ],
 
       // --- Bulletproof アーキテクチャの境界チェック ---
-      'boundaries/element-types': [
+      // v7 で `boundaries/element-types` は deprecated（`boundaries/dependencies` へ置換）。
+      // あわせて selector がオブジェクト形式に、`rules` オプションが `policies` に改称された。
+      // 2026-08-21 に一括移行。挙動は移行前と同一
+      // （app → feature / shared、feature → shared、shared → shared のみ許可）。
+      'boundaries/dependencies': [
         'error',
         {
           default: 'disallow',
-          rules: [
+          policies: [
             {
-              from: 'app',
-              allow: ['feature', 'shared'],
+              from: { element: { type: 'app' } },
+              allow: [
+                { to: { element: { type: 'feature' } } },
+                { to: { element: { type: 'shared' } } },
+              ],
             },
             {
-              from: 'feature',
-              allow: ['shared'],
+              from: { element: { type: 'feature' } },
+              allow: [{ to: { element: { type: 'shared' } } }],
             },
             {
-              from: 'shared',
-              allow: ['shared'],
+              from: { element: { type: 'shared' } },
+              allow: [{ to: { element: { type: 'shared' } } }],
             },
           ],
         },
       ],
 
+      // warn だと `pnpm lint` が終了コード0で通過し、実質的に無効だった（2026-08-21 の剪定監査）。
+      // プロンプト側5箇所の注意喚起に頼っていた状態を解消するため error に格上げする。
       'no-console': [
-        'warn',
+        'error',
         {
           allow: ['warn', 'error'],
         },
