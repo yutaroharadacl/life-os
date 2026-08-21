@@ -22,7 +22,7 @@ Bulletproof React 準拠のフィーチャースライス。
 `src/shared`（機能横断の共通物）。
 
 依存の向きは **`app` → `feature` → `shared` の一方通行**で、
-`eslint.config.mjs` の `boundaries/element-types` が実際に強制している（違反すると lint エラー）。
+`eslint.config.mjs` の `boundaries/dependencies` が実際に強制している（違反すると lint エラー）。
 
 - **feature 同士の相互 import は禁止**。共有したくなったら `shared` に切り出す
 - `src/api/` と `src/components/` は境界定義に存在しない空ディレクトリ。ここにファイルを置かない
@@ -86,7 +86,7 @@ pnpm check:design    # 設計書ヘッダのステータス更新漏れを検査
 ## やってはいけないこと
 
 - **テストを書かずに実装を始める**（ユーザーが明示的にスキップを指示した場合のみ例外）
-- **詳細設計書の承認を得ずに実装に入る**
+- **詳細設計書の承認を得ずに実装に入る**（そもそも設計書が必要な変更かの基準は `detail-design`「0.」）
 - `any` を使う / `console.log` を使う（`console.warn`・`console.error` のみ可）— いずれも ESLint エラー
 - 指示なしに `git commit` / `git push` する
 - `docs/要件定義書_*.md` を勝手に書き換える（変更が必要ならユーザーに確認する）

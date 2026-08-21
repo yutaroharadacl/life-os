@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm lint >/dev/null 2>&1 || echo '⚠️ pnpm lint が失敗しています。`pnpm lint` を実行して修正してください。'; pnpm typecheck >/dev/null 2>&1 || echo '⚠️ 型エラーがあります。`pnpm typecheck` を実行して修正してください。'",
+            "command": "CHANGED=$(git status --porcelain -- src 2>/dev/null || echo force); if [ -n \"$CHANGED\" ]; then pnpm lint >/dev/null 2>&1 || echo '⚠️ pnpm lint が失敗しています。`pnpm lint` を実行して修正してください。'; pnpm typecheck >/dev/null 2>&1 || echo '⚠️ 型エラーがあります。`pnpm typecheck` を実行して修正してください。'; fi",
             "timeout": 120
           }
         ]
